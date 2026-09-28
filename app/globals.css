@@ -1,0 +1,217 @@
+@import "tailwindcss";
+
+/*
+ * Theme tokens — matched to app.neverland.money's measured styles (see docs/STYLE_GUIDE.md).
+ * Change the look here; components only use these tokens.
+ */
+@theme {
+  --font-sans: var(--font-quicksand), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cinzel), serif;
+
+  --color-night: #200041;
+  --color-night-deep: #12002c;
+  --color-surface: #2a0b51;
+  --color-surface-top: #370f64;
+  --color-surface-muted: #23133c;
+
+  --color-ink: #ffffff;
+  --color-ink-secondary: #d4cedc;
+  --color-ink-muted: #a194b3;
+  --color-label: rgb(178 189 224 / 0.9);
+
+  --color-brand-from: #c757d8;
+  --color-brand-to: #9a00b2;
+  --color-brand-hover-from: #cf6edd;
+  --color-brand-hover-to: #b500d1;
+  --color-brand-active-from: #9125a1;
+  --color-violet: #9a5cff;
+  --color-violet-strong: #b16eff;
+  --color-lavender: #e5cdfe;
+
+  --color-low: #34d399;
+  --color-medium: #f4b256;
+  --color-high: #fb7185;
+  --color-reward: #bae6fd;
+
+  --radius-card: 28px;
+  --radius-stat: 20px;
+  --radius-panel: 16px;
+  --radius-chip: 8px;
+
+  --shadow-panel: 0 26px 56px -42px rgba(3, 7, 18, 0.78), 0 0 84px -60px rgba(177, 110, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-cta: 0 16px 40px rgba(118, 17, 140, 0.28);
+
+  --tracking-label: 0.18em;
+  --tracking-title: 0.06em;
+
+  --animate-shimmer: shimmer 2s linear infinite;
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  min-height: 100dvh;
+  color: var(--color-ink);
+  background-color: var(--color-night-deep);
+}
+
+/*
+ * The page backdrop lives on a layer pinned to the viewport. iOS Safari ignores
+ * `background-attachment: fixed`, which stretched the glows over the whole (very tall)
+ * page and washed out the background on phones.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 12% 0%, rgba(126, 99, 255, 0.2) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 80% 4%, rgba(180, 82, 255, 0.24) 0%, transparent 70%),
+    linear-gradient(116deg, #2e0958, #10002c 50%, #200041);
+}
+
+@layer components {
+  .panel {
+    background-image: linear-gradient(180deg, var(--color-surface-top), var(--color-surface));
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-panel);
+    backdrop-filter: blur(26px) saturate(132%);
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 3rem;
+    padding: 0 1.75rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.03em;
+    color: white;
+    background-image: linear-gradient(to bottom, var(--color-brand-from), var(--color-brand-to));
+    box-shadow: var(--shadow-cta);
+    transition: background-image 150ms, transform 150ms;
+    cursor: pointer;
+  }
+  .btn-primary:hover {
+    background-image: linear-gradient(to bottom, var(--color-brand-hover-from), var(--color-brand-hover-to));
+  }
+  .btn-primary:active {
+    background-image: linear-gradient(to bottom, var(--color-brand-active-from), var(--color-brand-to));
+    transform: scale(0.98);
+  }
+  .btn-primary:disabled {
+    background-image: none;
+    background-color: rgba(226, 168, 235, 0.1);
+    color: var(--color-ink-muted);
+    box-shadow: none;
+    cursor: default;
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 2.5rem;
+    padding: 0 1rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    transition: background-color 150ms, border-color 150ms;
+    cursor: pointer;
+  }
+  .btn-ghost:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+  .btn-ghost:active {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  .btn-ghost:disabled {
+    color: var(--color-ink-muted);
+    cursor: default;
+  }
+
+  .label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    color: var(--color-label);
+  }
+
+  .skeleton {
+    background-image: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.04) 100%
+    );
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+    border-radius: 8px;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-violet-strong);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* ---------- Landing hero ---------- */
+
+.text-gradient {
+  background-image: linear-gradient(180deg, #ffffff 35%, var(--color-lavender));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.mote {
+  opacity: 0.55;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes mote {
+  0% { transform: translate(0, 0); opacity: 0; }
+  15%, 80% { opacity: 0.85; }
+  100% { transform: translate(180px, -36px); opacity: 0; }
+}
+@keyframes heartbeat {
+  0%, 60%, 100% { transform: translateY(-1px) scale(1); }
+  20% { transform: translateY(-1px) scale(1.22); }
+  40% { transform: translateY(-1px) scale(0.95); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.45; transform: scale(0.94); }
+  50% { opacity: 0.85; transform: scale(1.06); }
+}
+
+/* Motion only for people who haven't asked for less of it; otherwise the scene is drawn still. */
+@media (prefers-reduced-motion: no-preference) {
+  .rise { animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--d, 0ms); }
+  .mote { animation: mote var(--dur, 14s) ease-in-out var(--d, 0s) infinite; }
+  .glow-pulse { animation: pulse-glow 4s ease-in-out infinite; }
+  .heartbeat { animation: heartbeat 1.8s ease-in-out infinite; }
+}
