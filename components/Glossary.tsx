@@ -15,6 +15,10 @@ const TERMS: [string, string][] = [
     "DUST",
     "Neverland's reward token. Neverland pays it to depositors and borrowers on top of interest. Earnings here count DUST at today's market price{dustPrice}.",
   ],
+  [
+    "MON rewards",
+    "Extra MON that Neverland hands out through Merkl to lenders of some assets. You claim it at merkl.xyz. Earnings here count it at today's MON price.",
+  ],
   ["MON", "The main coin of the Monad network."],
   ["shMON, sMON, gMON", "MON that's been staked with FastLane (shMON), Kintsu (sMON) or Magma (gMON). They earn MON staking rewards and track MON's price. You can get them by staking MON with the issuer or swapping on a DEX."],
   ["AUSD, USDC, USDT0", "Stablecoins: tokens designed to stay worth $1 each."],

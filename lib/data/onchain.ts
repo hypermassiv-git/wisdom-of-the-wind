@@ -19,6 +19,7 @@ import {
   rewardsControllerAbi,
   uniV2PairAbi,
 } from "./abis";
+import { fetchMerklOpportunities, type MerklIncentives, mergeIncentives, merklIncentives } from "./merkl";
 import { emissionApr, rayToApy, v2SpotPrice } from "./rates";
 import { ptMaturityFromSymbol } from "./yieldSources";
 import type { EMode, Incentive, Market, MarketSnapshot, RateModel, Reserve } from "./types";
@@ -33,6 +34,8 @@ interface RawReward {
 
 interface RawReserve {
   underlying: Address;
+  aToken: Address;
+  debtToken: Address;
   symbol: string;
   onchainSymbol: string;
   decimals: number;
@@ -123,6 +126,8 @@ async function readMarket(client: Client, m: MarketAddresses) {
       const capsRes = ok(caps);
       return {
         underlying,
+        aToken,
+        debtToken: vDebt,
         symbol: asset.symbol,
         onchainSymbol: symbol,
         decimals: Number(c[0]),
@@ -291,7 +296,12 @@ function toIncentives(
   });
 }
 
-function toReserve(r: RawReserve, priceByToken: Map<string, number>, now: number): Reserve {
+function toReserve(
+  r: RawReserve,
+  priceByToken: Map<string, number>,
+  merkl: MerklIncentives,
+  now: number,
+): Reserve {
   const supplyUsd = amountUsd(r.totalAToken, r.decimals, r.priceUsd);
   const debtUsd = amountUsd(r.totalVariableDebt, r.decimals, r.priceUsd);
   const supplyCapUsd = Number(r.supplyCap) * r.priceUsd;
@@ -316,8 +326,14 @@ function toReserve(r: RawReserve, priceByToken: Map<string, number>, now: number
     supplyCapUsd: r.supplyCap > 0n ? supplyCapUsd : undefined,
     borrowCapUsd: r.borrowCap > 0n ? borrowCapUsd : undefined,
     rateModel: r.rateModel,
-    supplyIncentives: toIncentives(r.supplyRewards, supplyUsd, priceByToken, now),
-    borrowIncentives: toIncentives(r.borrowRewards, debtUsd, priceByToken, now),
+    supplyIncentives: mergeIncentives(
+      toIncentives(r.supplyRewards, supplyUsd, priceByToken, now),
+      merkl.supply.get(r.aToken.toLowerCase()) ?? [],
+    ),
+    borrowIncentives: mergeIncentives(
+      toIncentives(r.borrowRewards, debtUsd, priceByToken, now),
+      merkl.borrow.get(r.debtToken.toLowerCase()) ?? [],
+    ),
     eModeId: r.eModeId,
   };
 }
@@ -331,10 +347,16 @@ export async function fetchLiveSnapshot(): Promise<MarketSnapshot> {
   const primary = url.startsWith("ws") ? webSocket(url, { timeout: 10_000 }) : http(url, { timeout: 10_000 });
   const transport = fallback([primary, http(undefined, { timeout: 10_000 })]);
   const client = createPublicClient({ chain: monad, transport }) as Client;
-  const [dustPriceUsd, raw] = await Promise.all([
+  const [dustPriceUsd, raw, merklOpps] = await Promise.all([
     readDustPrice(client),
     Promise.all(MARKETS.map((m) => readMarket(client, m))),
+    // MON incentives come from Merkl. If it's down, show on-chain rewards only.
+    fetchMerklOpportunities().catch((err) => {
+      console.warn("[onchain] Merkl fetch failed; MON incentives left out:", err);
+      return [];
+    }),
   ]);
+  const merkl = merklIncentives(merklOpps);
 
   const addresses: Record<string, string> = {};
   const maturities: Record<string, string> = {};
@@ -357,7 +379,7 @@ export async function fetchLiveSnapshot(): Promise<MarketSnapshot> {
     name: config.name,
     kind: config.kind,
     eModes,
-    reserves: reserves.map((r) => toReserve(r, priceByToken, now)),
+    reserves: reserves.map((r) => toReserve(r, priceByToken, merkl, now)),
   }));
 
   return {

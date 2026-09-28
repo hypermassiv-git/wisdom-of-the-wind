@@ -1,18 +1,25 @@
 import { displayName } from "@/config/assets";
-import { formatDate, listJoin, usd } from "@/lib/format";
+import { formatDate, usd } from "@/lib/format";
 import { daysToMaturity } from "@/lib/sortFilter";
 import type { Strategy } from "@/lib/engine/types";
 
-/** Yearly earnings on the chosen amount, as a simple sum: earned − paid + rewards = total. */
+/** Bar and dot colour per reward token, matching its icon. Other tokens use the generic reward colour. */
+const REWARD_COLOR: Record<string, string> = { DUST: "bg-dust", MON: "bg-mon" };
+const rewardColor = (token: string) => REWARD_COLOR[token] ?? "bg-reward";
+
+/** Yearly earnings on the chosen amount, as a simple sum: earned + rewards − paid = total. */
 export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalUsd: number }) {
   const earned = s.legs
     .filter((l) => l.role !== "borrow")
     .reduce((sum, l) => sum + l.amountUsd * (l.baseRate + l.builtInRate), 0);
   const paid = s.legs.filter((l) => l.role === "borrow").reduce((sum, l) => sum + l.amountUsd * l.baseRate, 0);
-  const tokens = Object.entries(s.earnings.rewardsByToken)
+  // One row per reward token: DUST first, then MON, then anything else.
+  const ORDER = ["DUST", "MON"];
+  const rank = (t: string) => (ORDER.includes(t) ? ORDER.indexOf(t) : ORDER.length);
+  const rewards = Object.entries(s.earnings.rewardsByToken)
     .filter(([, v]) => v > 0.005)
-    .map(([t]) => t);
-  const rewardLabel = `${listJoin(tokens.length ? tokens : ["DUST"])} rewards`;
+    .sort(([a], [b]) => rank(a) - rank(b));
+  if (!rewards.length) rewards.push(["DUST", 0]);
 
   const positive = earned + s.earnings.rewards;
   const earnedShare = positive > 0 ? (earned / positive) * 100 : 0;
@@ -48,13 +55,21 @@ export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalU
 
       <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-white/[0.06]" aria-hidden>
         <div className="bg-ink/85" style={{ width: `${earnedShare}%` }} />
-        <div className="bg-reward" style={{ width: `${100 - earnedShare}%` }} />
+        {rewards.map(([token, value]) => (
+          <div
+            key={token}
+            className={rewardColor(token)}
+            style={{ width: `${positive > 0 ? (value / positive) * 100 : 0}%` }}
+          />
+        ))}
       </div>
 
       <dl className="mt-3 space-y-1 text-sm tabular-nums">
         <Row dot="bg-ink/85" label="Interest you earn" value={usd(earned)} />
+        {rewards.map(([token, value]) => (
+          <Row key={token} dot={rewardColor(token)} label={`${token} rewards`} value={usd(value)} reward />
+        ))}
         {paid > 0.5 && <Row label="Interest you pay on the loan" value={`−${usd(paid)}`} muted />}
-        <Row dot="bg-reward" label={rewardLabel} value={usd(s.earnings.rewards)} reward />
         <div className="flex justify-between border-t border-white/10 pt-1 font-semibold">
           <dt>Total</dt>
           <dd>{usd(s.earnings.net)}</dd>
