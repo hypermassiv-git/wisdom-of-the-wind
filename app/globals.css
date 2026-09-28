@@ -32,6 +32,9 @@
   --color-medium: #f4b256;
   --color-high: #fb7185;
   --color-reward: #bae6fd;
+  /* Reward-token colours, taken from their icons (components/TokenIcon.tsx). */
+  --color-dust: #c757d8;
+  --color-mon: #6e54ff;
 
   --radius-card: 28px;
   --radius-stat: 20px;

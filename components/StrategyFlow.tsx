@@ -10,14 +10,17 @@ function shortMarket(name: string): string {
   return name === "main pool" ? "main pool" : name.replace(" isolated market", " mkt");
 }
 
-function rewardRate(leg: Leg): number {
-  return leg.incentives.reduce((sum, i) => sum + i.apr * (ENGINE_CONFIG.rewardValuation[i.token] ?? 1), 0);
+/** Yearly reward rate per token for this leg, largest first, hiding tiny ones. */
+function rewardRates(leg: Leg): { token: string; rate: number }[] {
+  return leg.incentives
+    .map((i) => ({ token: i.token, rate: i.apr * (ENGINE_CONFIG.rewardValuation[i.token] ?? 1) }))
+    .filter((r) => r.rate > 0.0005)
+    .sort((a, b) => b.rate - a.rate);
 }
 
 function Pill({ leg }: { leg: Leg }) {
   const paying = leg.role === "borrow";
   const rate = paying ? leg.baseRate : leg.baseRate + leg.builtInRate;
-  const dust = rewardRate(leg);
   return (
     <div className="min-w-0 rounded-2xl bg-white/[0.04] px-3 py-2 ring-1 ring-white/10">
       <div className="text-[11px] font-medium uppercase tracking-wide text-ink-muted">
@@ -32,11 +35,11 @@ function Pill({ leg }: { leg: Leg }) {
           {paying ? "Costs" : "Earns"} {usd(rate * leg.amountUsd)}/yr
         </span>
       </div>
-      {dust > 0.0005 && (
-        <div className="mt-0.5 flex items-center gap-1 text-xs tabular-nums text-reward">
-          <TokenIcon symbol="DUST" size={13} />+{usd(dust * leg.amountUsd)}/yr DUST
+      {rewardRates(leg).map(({ token, rate }) => (
+        <div key={token} className="mt-0.5 flex items-center gap-1 text-xs tabular-nums text-reward">
+          <TokenIcon symbol={token} size={13} />+{usd(rate * leg.amountUsd)}/yr {token}
         </div>
-      )}
+      ))}
     </div>
   );
 }

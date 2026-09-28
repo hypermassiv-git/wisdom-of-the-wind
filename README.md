@@ -26,6 +26,7 @@ npm test           # unit tests for the rate math and strategy engine
 Live mode is configured. `config/chain.ts` has the three PoolAddressesProviders and the DUST/USDC pair, all verified on-chain.
 
 - **Rates, LTVs, caps, e-mode and DUST emissions:** read from the Aave V3 contracts through each market's PoolAddressesProvider.
+- **MON incentives:** read from the Merkl API and matched to reserves by aToken address. If Merkl is down they are left out.
 - **DUST price:** spot price from the DUST/USDC Uniswap V2 pair. DUST is valued at full price, assuming the maximum lock.
 - **Built-in yields:**
   - shMON, sMON, gMON and earnAUSD come from DefiLlama's yields API.

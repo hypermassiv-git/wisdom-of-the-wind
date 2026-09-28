@@ -10,7 +10,7 @@ export interface EngineConfig {
   /**
    * How much each reward token is worth relative to its market price.
    * DUST is valued assuming the user locks it for the maximum period, so it counts at full
-   * market value (no early-claim haircut).
+   * market value (no early-claim haircut). MON incentives (paid via Merkl) count at full price.
    */
   rewardValuation: Record<string, number>;
   /** Skip borrow markets with less spare cash than this (USD). */
@@ -23,7 +23,7 @@ export const ENGINE_CONFIG: EngineConfig = {
   minNetApr: 0.01,
   leverageFraction: 0.5,
   principalUsd: 1000,
-  rewardValuation: { DUST: 1.0 },
+  rewardValuation: { DUST: 1.0, MON: 1.0 },
   minLiquidityUsd: 10_000,
   maxResults: 20,
 };

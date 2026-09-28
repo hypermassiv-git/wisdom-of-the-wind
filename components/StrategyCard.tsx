@@ -118,7 +118,11 @@ function exitSteps(s: Strategy): string[] {
           lend && lend.symbol !== borrow.symbol ? `, swap it back to ${b},` : ""
         } and repay the ${b} loan.`;
   const pt = s.legs.find((l) => l.role !== "borrow" && getAsset(l.symbol)?.builtInYield?.kind === "pt");
-  const lines = [first, `Withdraw your ${d}.`, "Claim any DUST rewards you've collected in the Neverland app."];
+  const earnsMon = s.legs.some((l) => l.incentives.some((i) => i.token === "MON" && i.apr > 0));
+  const claim = earnsMon
+    ? "Claim any DUST rewards in the Neverland app and MON rewards on merkl.xyz."
+    : "Claim any DUST rewards you've collected in the Neverland app.";
+  const lines = [first, `Withdraw your ${d}.`, claim];
   if (pt) {
     lines.push(
       `If you leave before ${displayName(pt.symbol)} matures${

@@ -32,6 +32,7 @@ function reserve(r: R): Reserve {
 }
 
 const dust = (apr: number): Incentive[] => [{ token: "DUST", apr }];
+const mon = (apr: number): Incentive[] => [{ token: "MON", apr }];
 
 export function mockSnapshot(now = new Date()): MarketSnapshot {
   // Fixed sample yields, kept separate from config fallbacks so tests stay stable.
@@ -82,22 +83,24 @@ export function mockSnapshot(now = new Date()): MarketSnapshot {
           reserve({
             symbol: "USDC", supplyRate: 0.052, borrowRate: 0.071, ltv: 0.75, liquidationThreshold: 0.8,
             canBorrow: true, canCollateral: true, eModeId: 2, totalSupplyUsd: 25_000_000,
-            availableLiquidityUsd: 6_000_000, supplyIncentives: dust(0.015), borrowIncentives: dust(0.01),
+            availableLiquidityUsd: 6_000_000, supplyIncentives: [...dust(0.015), ...mon(0.03)],
+            borrowIncentives: dust(0.01),
           }),
           reserve({
             symbol: "USDT0", supplyRate: 0.047, borrowRate: 0.066, ltv: 0.75, liquidationThreshold: 0.8,
             canBorrow: true, canCollateral: true, eModeId: 2, totalSupplyUsd: 14_000_000,
-            availableLiquidityUsd: 4_000_000, supplyIncentives: dust(0.012),
+            availableLiquidityUsd: 4_000_000, supplyIncentives: [...dust(0.012), ...mon(0.03)],
           }),
           reserve({
             symbol: "AUSD", supplyRate: 0.041, borrowRate: 0.058, ltv: 0.75, liquidationThreshold: 0.8,
             canBorrow: true, canCollateral: true, eModeId: 2, totalSupplyUsd: 12_000_000,
-            availableLiquidityUsd: 4_500_000, supplyIncentives: dust(0.01), borrowIncentives: dust(0.022),
+            availableLiquidityUsd: 4_500_000, supplyIncentives: [...dust(0.01), ...mon(0.03)],
+            borrowIncentives: dust(0.022),
           }),
           reserve({
             symbol: "earnAUSD", supplyRate: 0.004, ltv: 0.72,
             liquidationThreshold: 0.78, canCollateral: true, eModeId: 2,
-            supplyIncentives: dust(0.008),
+            supplyIncentives: [...dust(0.008), ...mon(0.0066)],
           }),
           reserve({
             symbol: "cbBTC", priceUsd: 112_000, supplyRate: 0.002, borrowRate: 0.012, ltv: 0.73,
@@ -128,12 +131,12 @@ export function mockSnapshot(now = new Date()): MarketSnapshot {
         reserves: [
           reserve({
             symbol: "PT-AUSD", priceUsd: 0.97, ltv: 0.86, liquidationThreshold: 0.9,
-            canCollateral: true, supplyIncentives: dust(0.004),
+            canCollateral: true, supplyIncentives: [...dust(0.004), ...mon(0.01)],
           }),
           reserve({
             symbol: "AUSD", supplyRate: 0.078, borrowRate: 0.094, canBorrow: true,
             totalSupplyUsd: 3_000_000, availableLiquidityUsd: 450_000,
-            supplyIncentives: dust(0.018), borrowIncentives: dust(0.012),
+            supplyIncentives: [...dust(0.018), ...mon(0.03)], borrowIncentives: dust(0.012),
           }),
         ],
       },
@@ -151,7 +154,7 @@ export function mockSnapshot(now = new Date()): MarketSnapshot {
             symbol: "WMON", priceUsd: 0.045, supplyRate: 0.042, borrowRate: 0.089, canBorrow: true,
             totalSupplyUsd: 2_500_000, availableLiquidityUsd: 600_000,
             // Base rate is below the main pool's borrow rate; rewards make up the difference.
-            supplyIncentives: [...dust(0.03), { token: "MON", apr: 0.012 }],
+            supplyIncentives: [...dust(0.03), ...mon(0.04)],
             borrowIncentives: dust(0.02),
           }),
         ],
@@ -168,11 +171,13 @@ export function mockSnapshot(now = new Date()): MarketSnapshot {
           }),
           reserve({
             symbol: "USDC", supplyRate: 0.018, borrowRate: 0.04, canBorrow: true,
-            totalSupplyUsd: 800_000, availableLiquidityUsd: 450_000, borrowIncentives: dust(0.015),
+            totalSupplyUsd: 800_000, availableLiquidityUsd: 450_000, supplyIncentives: mon(0.02),
+            borrowIncentives: dust(0.015),
           }),
           reserve({
             symbol: "AUSD", supplyRate: 0.017, borrowRate: 0.039, canBorrow: true,
-            totalSupplyUsd: 800_000, availableLiquidityUsd: 450_000, borrowIncentives: dust(0.02),
+            totalSupplyUsd: 800_000, availableLiquidityUsd: 450_000, supplyIncentives: mon(0.02),
+            borrowIncentives: dust(0.02),
           }),
         ],
       },
