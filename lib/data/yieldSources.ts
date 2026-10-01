@@ -67,3 +67,19 @@ export function ptMaturityFromSymbol(symbol: string): string | undefined {
   if (month < 0) return undefined;
   return `${m[3]}-${String(month + 1).padStart(2, "0")}-${m[1].padStart(2, "0")}`;
 }
+
+/**
+ * When Pendle rolls a PT, Neverland lists the new one next to the old one in the same market.
+ * Both map to one app symbol (e.g. "PT-AUSD"), so keep only the latest maturity per symbol.
+ */
+export function latestPtPerSymbol<T extends { symbol: string; onchainSymbol: string }>(reserves: T[]): T[] {
+  const latest = new Map<string, string>();
+  for (const r of reserves) {
+    const m = ptMaturityFromSymbol(r.onchainSymbol);
+    if (m && m > (latest.get(r.symbol) ?? "")) latest.set(r.symbol, m);
+  }
+  return reserves.filter((r) => {
+    const m = ptMaturityFromSymbol(r.onchainSymbol);
+    return !m || m === latest.get(r.symbol);
+  });
+}

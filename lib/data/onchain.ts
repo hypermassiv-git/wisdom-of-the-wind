@@ -21,7 +21,7 @@ import {
 } from "./abis";
 import { fetchMerklOpportunities, type MerklIncentives, mergeIncentives, merklIncentives } from "./merkl";
 import { emissionApr, rayToApy, v2SpotPrice } from "./rates";
-import { ptMaturityFromSymbol } from "./yieldSources";
+import { latestPtPerSymbol, ptMaturityFromSymbol } from "./yieldSources";
 import type { EMode, Incentive, Market, MarketSnapshot, RateModel, Reserve } from "./types";
 
 interface RawReward {
@@ -152,7 +152,7 @@ async function readMarket(client: Client, m: MarketAddresses) {
       };
     }),
   );
-  const reserves = parsed.filter((r): r is RawReserve => r !== null);
+  const reserves = latestPtPerSymbol(parsed.filter((r): r is RawReserve => r !== null));
 
   const eModes = await readEModes(client, pool, reserves);
   return { config: m, reserves, eModes };

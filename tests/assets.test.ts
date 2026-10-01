@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { assetFromOnchainSymbol, resolveBuiltInYields } from "@/config/assets";
-import { ptMaturityFromSymbol } from "@/lib/data/yieldSources";
+import { latestPtPerSymbol, ptMaturityFromSymbol } from "@/lib/data/yieldSources";
 
 describe("assetFromOnchainSymbol", () => {
   it("matches Pendle PTs by prefix regardless of maturity", () => {
@@ -20,6 +20,17 @@ describe("ptMaturityFromSymbol", () => {
     expect(ptMaturityFromSymbol("PT-AUSD-8OCT2026")).toBe("2026-10-08");
     expect(ptMaturityFromSymbol("PT-shMON-18MAR2027")).toBe("2027-03-18");
     expect(ptMaturityFromSymbol("shMON")).toBeUndefined();
+  });
+});
+
+describe("latestPtPerSymbol", () => {
+  it("keeps only the newest PT when a rolled one is listed next to the old one", () => {
+    const rs = [
+      { symbol: "AUSD", onchainSymbol: "AUSD" },
+      { symbol: "PT-AUSD", onchainSymbol: "PT-AUSD-8OCT2026" },
+      { symbol: "PT-AUSD", onchainSymbol: "PT-AUSD-17DEC2026" },
+    ];
+    expect(latestPtPerSymbol(rs).map((r) => r.onchainSymbol)).toEqual(["AUSD", "PT-AUSD-17DEC2026"]);
   });
 });
 

@@ -171,9 +171,9 @@ export const ASSETS: AssetConfig[] = [
     onchainPrefix: "PT-AUSD-",
     builtInYield: {
       kind: "pt",
-      staticApr: 0.065,
+      staticApr: 0.059,
       source: "a fixed rate locked in until maturity",
-      maturity: "2026-10-08",
+      maturity: "2026-12-17",
       live: pendlePt(),
     },
     loopsWith: "AUSD",
