@@ -9,7 +9,7 @@
  *      (or `onchainPrefix` for Pendle PTs, whose symbols carry a maturity date).
  */
 
-import { llamaPool, pendlePt, type YieldContext } from "@/lib/data/yieldSources";
+import { llamaPool, pendlePt, ptMaturityFromSymbol, type YieldContext } from "@/lib/data/yieldSources";
 
 /** Assets in the same family move together in price, so borrowing one against another is low risk. */
 export type PriceFamily = "MON" | "USD" | "BTC" | "ETH" | "GOLD";
@@ -54,7 +54,10 @@ export interface AssetConfig {
   stakeWith?: string;
   /** Other symbols the chain may report for this asset. */
   onchainSymbols?: string[];
-  /** Matches any on-chain symbol starting with this (e.g. "PT-AUSD-" for "PT-AUSD-8OCT2026"). */
+  /**
+   * Matches any on-chain symbol starting with this (e.g. "PT-AUSD-" for "PT-AUSD-8OCT2026").
+   * Each match keeps its full on-chain symbol, so an old and a rolled PT can be listed side by side.
+   */
   onchainPrefix?: string;
   /** Treat as the same reserve as another symbol (native MON is used through WMON). */
   sameReserveAs?: string;
@@ -194,57 +197,90 @@ for (const a of ASSETS) {
   for (const s of a.onchainSymbols ?? []) byOnchain.set(s.toLowerCase(), a);
 }
 
+function byPrefix(symbol: string): AssetConfig | undefined {
+  const lower = symbol.toLowerCase();
+  return ASSETS.find((a) => a.onchainPrefix && lower.startsWith(a.onchainPrefix.toLowerCase()));
+}
+
+/** Config for an app symbol. PTs carry their maturity ("PT-AUSD-17DEC2026") and match by prefix. */
 export function getAsset(symbol: string): AssetConfig | undefined {
-  return bySymbol.get(symbol);
+  return bySymbol.get(symbol) ?? byPrefix(symbol);
 }
 
 export function assetFromOnchainSymbol(symbol: string): AssetConfig | undefined {
-  const lower = symbol.toLowerCase();
-  return (
-    byOnchain.get(lower) ??
-    ASSETS.find((a) => a.onchainPrefix && lower.startsWith(a.onchainPrefix.toLowerCase()))
-  );
+  return byOnchain.get(symbol.toLowerCase()) ?? byPrefix(symbol);
 }
 
+/** The app symbol for a reserve: the config symbol, or the full on-chain symbol for PTs. */
+export function appSymbol(onchainSymbol: string): string | undefined {
+  const a = assetFromOnchainSymbol(onchainSymbol);
+  if (!a) return undefined;
+  return a.onchainPrefix && byPrefix(onchainSymbol) === a && ptMaturityFromSymbol(onchainSymbol) ? onchainSymbol : a.symbol;
+}
+
+/** Name without the maturity, e.g. "PT-AUSD". */
+export function baseName(symbol: string): string {
+  return getAsset(symbol)?.display ?? symbol;
+}
+
+/** Name shown to users. PTs add their maturity, e.g. "PT-AUSD (Dec 17)". */
 export function displayName(symbol: string): string {
-  return bySymbol.get(symbol)?.display ?? symbol;
+  const base = baseName(symbol);
+  const iso = getAsset(symbol)?.onchainPrefix ? ptMaturityFromSymbol(symbol) : undefined;
+  if (!iso) return base;
+  const date = new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  return `${base} (${date})`;
 }
 
 export function sameFamily(a: string, b: string): boolean {
-  const fa = bySymbol.get(a)?.family;
-  return fa !== undefined && fa === bySymbol.get(b)?.family;
+  const fa = getAsset(a)?.family;
+  return fa !== undefined && fa === getAsset(b)?.family;
 }
 
 export function builtInApr(symbol: string, overrides?: Record<string, number>): number {
   if (overrides && symbol in overrides) return overrides[symbol];
-  return bySymbol.get(symbol)?.builtInYield?.staticApr ?? 0;
+  return getAsset(symbol)?.builtInYield?.staticApr ?? 0;
 }
 
 /**
  * Resolves built-in yields, using live sources where configured.
- * `addresses` maps symbol → on-chain address (needed for PT lookups).
+ * `addresses` maps app symbol → on-chain address (needed for PT lookups). Each listed PT
+ * ("PT-AUSD-8OCT2026", "PT-AUSD-17DEC2026") gets its own entry.
  */
 export async function resolveBuiltInYields(
   addresses: Record<string, string> = {},
 ): Promise<{ yields: Record<string, number>; live: Record<string, boolean> }> {
   const yields: Record<string, number> = {};
   const live: Record<string, boolean> = {};
+  // Listed PTs replace their bare config symbol ("PT-AUSD"), which has no address to look up.
+  const listed = Object.keys(addresses);
+  const symbols = new Set([
+    ...ASSETS.filter((a) => !listed.some((s) => s !== a.symbol && getAsset(s) === a)).map((a) => a.symbol),
+    ...listed,
+  ]);
   await Promise.all(
-    ASSETS.filter((a) => a.builtInYield).map(async (a) => {
-      const y = a.builtInYield!;
-      yields[a.symbol] = y.staticApr;
-      live[a.symbol] = false;
+    [...symbols].map(async (symbol) => {
+      const y = getAsset(symbol)?.builtInYield;
+      if (!y) return;
+      yields[symbol] = y.staticApr;
+      live[symbol] = false;
+      // A matured PT has no fixed rate left.
+      const maturity = y.kind === "pt" ? ptMaturityFromSymbol(symbol) : undefined;
+      if (maturity && Date.parse(maturity) <= Date.now()) {
+        yields[symbol] = 0;
+        return;
+      }
       if (!y.live) return;
       try {
-        const v = await y.live({ address: addresses[a.symbol] });
+        const v = await y.live({ address: addresses[symbol] });
         if (v !== null && Number.isFinite(v)) {
-          yields[a.symbol] = v;
-          live[a.symbol] = true;
+          yields[symbol] = v;
+          live[symbol] = true;
         } else {
-          console.warn(`[yields] no live value for ${a.symbol}; using fallback ${y.staticApr}`);
+          console.warn(`[yields] no live value for ${symbol}; using fallback ${y.staticApr}`);
         }
       } catch (err) {
-        console.warn(`[yields] live source failed for ${a.symbol}; using fallback`, err);
+        console.warn(`[yields] live source failed for ${symbol}; using fallback`, err);
       }
     }),
   );

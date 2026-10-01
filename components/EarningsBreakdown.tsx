@@ -1,4 +1,4 @@
-import { displayName } from "@/config/assets";
+import { baseName, displayName } from "@/config/assets";
 import { formatDate, usd } from "@/lib/format";
 import { daysToMaturity } from "@/lib/sortFilter";
 import type { Strategy } from "@/lib/engine/types";
@@ -47,8 +47,8 @@ export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalU
         return (
           <p className="mt-2 text-xs leading-relaxed text-medium">
             {displayName(pt.symbol)}&apos;s fixed rate ends {formatDate(s.vars.maturity)}. This yearly figure assumes you
-            then move into the next {displayName(pt.symbol)} at a similar rate. If you do nothing, it becomes plain{" "}
-            {displayName(pt.symbol).replace("PT-", "")} and stops earning the fixed rate.
+            then move into the next {baseName(pt.symbol)} at a similar rate. If you do nothing, it becomes plain{" "}
+            {baseName(pt.symbol).replace("PT-", "")} and stops earning the fixed rate.
           </p>
         );
       })()}

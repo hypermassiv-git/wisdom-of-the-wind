@@ -3,6 +3,8 @@
  * (public/tokens/<key>.svg) on a coloured circle with a coloured ring.
  */
 
+import { getAsset } from "@/config/assets";
+
 interface IconStyle {
   /** Circle fill (colour or CSS gradient). */
   bg: string;
@@ -46,7 +48,7 @@ const STYLES: Record<string, IconStyle> = {
 const FALLBACK: IconStyle = { bg: "#374151", ring: "#6B7280", ringWeight: 1, scale: 0.6 };
 
 export function TokenIcon({ symbol, size = 18 }: { symbol: string; size?: number }) {
-  const key = symbol.toLowerCase();
+  const key = (getAsset(symbol)?.symbol ?? symbol).toLowerCase();
   const known = key in STYLES;
   const s = STYLES[key] ?? FALLBACK;
   const ring = s.ringWeight ? Math.max(1, Math.round((size / 24) * s.ringWeight)) : 0;
