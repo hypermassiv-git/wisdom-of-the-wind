@@ -5,7 +5,7 @@
 import "server-only";
 import { type Address, createPublicClient, fallback, http, type PublicClient, webSocket, zeroAddress } from "viem";
 import { monad } from "viem/chains";
-import { assetFromOnchainSymbol, resolveBuiltInYields } from "@/config/assets";
+import { appSymbol, assetFromOnchainSymbol, resolveBuiltInYields } from "@/config/assets";
 import { DUST, getRpcUrl, type MarketAddresses, MARKETS, missingLiveConfig } from "@/config/chain";
 import {
   addressesProviderAbi,
@@ -111,8 +111,8 @@ async function readMarket(client: Client, m: MarketAddresses) {
       const d = ok(data);
       const t = ok(tokens);
       if (!symbol || !c || !d || !t) return null;
-      const asset = assetFromOnchainSymbol(symbol);
-      if (!asset) {
+      const appSym = appSymbol(symbol);
+      if (!appSym) {
         console.warn(`[onchain] ${m.id}: skipping unknown asset ${symbol} (${underlying}). Add it to config/assets.ts.`);
         return null;
       }
@@ -128,7 +128,7 @@ async function readMarket(client: Client, m: MarketAddresses) {
         underlying,
         aToken,
         debtToken: vDebt,
-        symbol: asset.symbol,
+        symbol: appSym,
         onchainSymbol: symbol,
         decimals: Number(c[0]),
         ltv: Number(c[1]) / 1e4,

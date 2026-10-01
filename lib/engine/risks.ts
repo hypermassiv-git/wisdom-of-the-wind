@@ -3,7 +3,7 @@
  * (price exposure, borrow rates, a stablecoin losing its $1 price, leaving a PT early, liquidation…)
  * rather than repeating liquidation everywhere. All figures come from live rates.
  */
-import { displayName, getAsset, type PriceFamily } from "@/config/assets";
+import { baseName, displayName, getAsset, type PriceFamily } from "@/config/assets";
 import type { EngineConfig } from "@/config/engine";
 import { formatDate, pct, usd } from "@/lib/format";
 import type { Candidate, Earnings, Leg } from "./types";
@@ -103,9 +103,7 @@ function ptEarlyExit(symbol: string, maturity: string, maturityIso?: string): Ri
   const detail = soon
     ? `${displayName(symbol)} matures on ${maturity}${
         days > 0 ? `, in about ${days} days` : ""
-      }. Its fixed rate stops then, so these yearly figures only hold until that date unless you move into the next ${displayName(
-        symbol,
-      )}.`
+      }. Its fixed rate stops then, so these yearly figures only hold until that date unless you move into the next ${baseName(symbol)}.`
     : `${displayName(symbol)} only reaches its full value on ${maturity}; leaving earlier means selling at the market price, which can be below what you paid.`;
   return {
     kind: "maturity",
