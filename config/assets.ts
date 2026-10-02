@@ -69,6 +69,7 @@ export const ASSETS: AssetConfig[] = [
   // ---- MON family ----
   { symbol: "MON", display: "MON", family: "MON", isStable: false, sameReserveAs: "WMON" },
   { symbol: "WMON", display: "MON", family: "MON", isStable: false },
+  { symbol: "hMON", display: "hMON", family: "MON", isStable: false },
   {
     symbol: "gMON",
     display: "gMON",

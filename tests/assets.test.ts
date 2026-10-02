@@ -11,6 +11,7 @@ describe("assetFromOnchainSymbol", () => {
 
   it("matches plain symbols exactly, case-insensitively", () => {
     expect(assetFromOnchainSymbol("wmon")?.symbol).toBe("WMON");
+    expect(assetFromOnchainSymbol("hMON")?.family).toBe("MON");
     expect(assetFromOnchainSymbol("loAZND")).toBeUndefined();
   });
 });

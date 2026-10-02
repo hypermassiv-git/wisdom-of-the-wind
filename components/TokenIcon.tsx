@@ -25,6 +25,7 @@ const STYLES: Record<string, IconStyle> = {
   wmon: { bg: "#200053", ring: "#ffffff", ringWeight: 1, scale: 0.6 },
   gmon: { bg: "#102231", ring: "#eb7c10", ringWeight: 1, scale: 0.6 },
   shmon: { bg: "#5046E5", ring: "#5046E5", ringWeight: 0, scale: 0.5 },
+  hmon: { bg: "#00D2FF", ring: "#00D2FF", ringWeight: 0, scale: 0.65 },
   smon: { bg: "linear-gradient(180deg, #3D1F89 0%, #16033D 100%)", ring: "#16033D", ringWeight: 1, scale: 0.6 },
   ausd: { bg: "#9a9350", ring: "#ffffff", ringWeight: 1, scale: 0.66, offsetY: -0.037 },
   earnausd: { bg: "#00c260", ring: "#000000", ringWeight: 1, scale: 0.55 },

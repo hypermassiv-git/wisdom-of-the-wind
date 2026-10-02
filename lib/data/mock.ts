@@ -69,6 +69,11 @@ export function mockSnapshot(now = new Date()): MarketSnapshot {
             supplyIncentives: dust(0.012), borrowIncentives: dust(0.018),
           }),
           reserve({
+            symbol: "hMON", priceUsd: 0.045, supplyRate: 0.008, borrowRate: 0.035,
+            ltv: 0.65, liquidationThreshold: 0.7, canBorrow: true, canCollateral: true, eModeId: 1,
+            totalSupplyUsd: 3_000_000, availableLiquidityUsd: 1_800_000, supplyIncentives: dust(0.006),
+          }),
+          reserve({
             symbol: "shMON", priceUsd: 0.0465, ltv: 0.6, liquidationThreshold: 0.7,
             canCollateral: true, eModeId: 1, supplyIncentives: dust(0.01),
           }),
