@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { ENGINE_CONFIG } from "@/config/engine";
 import { mockSnapshot } from "@/lib/data/mock";
 import { runEngine } from "@/lib/engine";
-import { countByType, priceExposure, sortAndFilter } from "@/lib/sortFilter";
+import { ASSETS } from "@/config/assets";
+import { countByType, heldAssets, priceExposure, sortAndFilter, startAsset } from "@/lib/sortFilter";
 
 const all = runEngine(mockSnapshot(new Date("2026-01-01T00:00:00Z")), { ...ENGINE_CONFIG, maxResults: 999 });
 const order = { Low: 0, Medium: 1, High: 2 } as const;
@@ -36,6 +37,35 @@ describe("sortAndFilter", () => {
     const counts = countByType(all);
     expect(Object.values(counts).reduce((a, b) => a + b!, 0)).toBe(all.length);
     expect(counts.yieldLoop).toBe(all.filter((s) => s.type === "yieldLoop").length);
+  });
+});
+
+describe("filtering by the token you have", () => {
+  const deposit = (s: (typeof all)[number]) => s.legs.find((l) => l.role === "deposit")!.symbol;
+
+  it("names the start token by its display name", () => {
+    for (const s of all) {
+      if (deposit(s) === "WMON") expect(startAsset(s)).toBe("MON");
+      if (deposit(s).startsWith("PT-AUSD")) expect(startAsset(s)).toBe("PT-AUSD");
+    }
+  });
+
+  it("only keeps strategies that start with that token as is", () => {
+    const ausd = sortAndFilter(all, "yield", "all", "AUSD");
+    expect(ausd.length).toBeGreaterThan(0);
+    expect(ausd.every((s) => deposit(s) === "AUSD")).toBe(true);
+    const mon = sortAndFilter(all, "yield", "all", "MON");
+    expect(mon.every((s) => deposit(s) === "WMON" || deposit(s) === "MON")).toBe(true);
+  });
+
+  it("lists every start token once, in asset registry order", () => {
+    const held = heldAssets(all);
+    expect(new Set(held.map((a) => a.name)).size).toBe(held.length);
+    expect(new Set(held.map((a) => a.name))).toEqual(new Set(all.map(startAsset)));
+    const rank = held.map((a) => ASSETS.findIndex((x) => x.display === a.name));
+    expect(rank).toEqual([...rank].sort((a, b) => a - b));
+    expect(held.find((a) => a.name === "syzUSD")?.plain).toBe(false);
+    expect(held.find((a) => a.name === "AUSD")?.plain).toBe(true);
   });
 });
 
