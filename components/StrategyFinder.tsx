@@ -5,8 +5,17 @@ import { ENGINE_CONFIG } from "@/config/engine";
 import type { StrategiesResponse } from "@/lib/api";
 import { runEngine, runEngineDetailed } from "@/lib/engine";
 import { pct, usd } from "@/lib/format";
-import { countByType, type SortKey, sortAndFilter, type TypeFilter } from "@/lib/sortFilter";
+import {
+  type AssetFilter,
+  countByType,
+  heldAssets,
+  type SortKey,
+  sortAndFilter,
+  startAsset,
+  type TypeFilter,
+} from "@/lib/sortFilter";
 import { TYPE_FILTERS } from "@/lib/strategyTypes";
+import { AssetPicker } from "./AssetPicker";
 import { Glossary } from "./Glossary";
 import { HowItWorks } from "./HowItWorks";
 import { StrategyCard } from "./StrategyCard";
@@ -39,6 +48,7 @@ export function StrategyFinder() {
   const [amountText, setAmountText] = useState("1000");
   const [sort, setSort] = useState<SortKey>("yield");
   const [type, setType] = useState<TypeFilter>("all");
+  const [asset, setAssetState] = useState<AssetFilter>("all");
   const [showAll, setShowAll] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
@@ -59,6 +69,26 @@ export function StrategyFinder() {
   const sectionRef = useRef<HTMLElement>(null);
   const [scrollOnShow, setScrollOnShow] = useState(false);
 
+  // A shared link like "/?have=AUSD" opens straight to that token's strategies.
+  const [autoReveal, setAutoReveal] = useState(false);
+  useEffect(() => {
+    const have = new URLSearchParams(window.location.search).get("have");
+    if (have) {
+      setAssetState(have);
+      setAutoReveal(true);
+    }
+  }, []);
+
+  function setAsset(v: AssetFilter) {
+    setAssetState(v);
+    setType("all");
+    setShowAll(false);
+    const url = new URL(window.location.href);
+    if (v === "all") url.searchParams.delete("have");
+    else url.searchParams.set("have", v);
+    history.replaceState(null, "", url);
+  }
+
   useEffect(() => {
     let cancelled = false;
     fetchStrategies()
@@ -75,6 +105,12 @@ export function StrategyFinder() {
       setScrollOnShow(false);
     }
   }, [scrollOnShow, state.status]);
+
+  useEffect(() => {
+    if (!autoReveal || state.status !== "idle") return;
+    setAutoReveal(false);
+    reveal();
+  });
 
   function reveal() {
     setScrollOnShow(true);
@@ -109,8 +145,12 @@ export function StrategyFinder() {
         : { strategies: [], tooBig: 0 },
     [data, amount],
   );
+  const assets = useMemo(() => heldAssets(all), [all]);
+  // A token can drop out (e.g. the amount is too big for its markets); fall back to all tokens.
+  const activeAsset = asset !== "all" && assets.some((a) => a.name === asset) ? asset : "all";
+  const picked = activeAsset !== "all";
   const counts = useMemo(() => countByType(all), [all]);
-  const matching = useMemo(() => sortAndFilter(all, sort, type), [all, sort, type]);
+  const matching = useMemo(() => sortAndFilter(all, sort, type, activeAsset), [all, sort, type, activeAsset]);
   const strategies = showAll ? matching : matching.slice(0, ENGINE_CONFIG.maxResults);
   // Safest simple pick for newcomers: the best-paying stablecoin deposit in the main pool.
   const starter = useMemo(
@@ -122,6 +162,13 @@ export function StrategyFinder() {
         .sort((a, b) => b.netApr - a.netApr)[0],
     [all],
   );
+  // With a token picked: its plain deposit, if a riskier strategy is ranked above it.
+  const simplest = useMemo(() => {
+    if (!picked || matching[0]?.type === "simpleDeposit") return undefined;
+    return matching
+      .filter((s) => s.type === "simpleDeposit")
+      .sort((a, b) => b.netApr - a.netApr)[0];
+  }, [picked, matching]);
 
   if (state.status === "idle") {
     const top = teaser?.[0];
@@ -197,9 +244,12 @@ export function StrategyFinder() {
         <SkeletonList />
       ) : data ? (
         <div className={`mt-5 transition-opacity duration-200 ${loading ? "opacity-50" : ""}`}>
-          <div className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
+          <AssetPicker assets={assets} value={activeAsset} onChange={setAsset} />
+          <div className="panel mt-3 flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
             <label className="block">
-              <span className="label">How much would you put in?</span>
+              <span className="label">
+                {picked ? `How much ${activeAsset}? (in $)` : "How much would you put in?"}
+              </span>
               <span className="mt-2 flex items-center gap-1 rounded-full bg-white/[0.06] px-4 py-2 ring-1 ring-white/10 focus-within:ring-violet-strong">
                 <span className="text-ink-muted">$</span>
                 <input
@@ -240,6 +290,7 @@ export function StrategyFinder() {
             </div>
           </div>
 
+          {!picked && (
           <div
             role="group"
             aria-label="Filter by strategy type"
@@ -261,32 +312,36 @@ export function StrategyFinder() {
                 </button>
               ))}
           </div>
+          )}
 
           <Glossary dustPriceUsd={data.dustPriceUsd} />
 
           {strategies.length === 0 ? (
             <div className="panel mt-5 p-8 text-center text-ink-secondary">
-              Nothing of this type earns more than {pct(data.minNetApr, 0)} a year right now. Try another type, or
-              check back later. Rates change often.
+              {picked
+                ? `Nothing that starts with ${activeAsset} earns more than ${pct(data.minNetApr, 0)} a year right now. `
+                : `Nothing of this type earns more than ${pct(data.minNetApr, 0)} a year right now. Try another type, or check back later. `}
+              Rates change often.
             </div>
           ) : (
             <>
               <p className="mt-6 text-sm text-ink-muted">
                 {strategies.length < matching.length
                   ? `Top ${strategies.length} of ${matching.length}`
-                  : `${matching.length} strategies`}
+                  : picked
+                    ? `${matching.length} ${matching.length === 1 ? "way" : "ways"} to earn with ${activeAsset}`
+                    : `${matching.length} strategies`}
                 , {sort === "yield" ? "best yield first" : "lowest risk first"}
                 {tooBig > 0 && `, ${tooBig} hidden because ${usd(amount)} is more than their markets can take`}
-                {(type !== "all" || sort !== "yield") && (
+                {(type !== "all" || sort !== "yield" || picked) && (
                   <>
                     {" "}
                     (
                     <button
                       className="underline underline-offset-2 hover:text-ink"
                       onClick={() => {
-                        setType("all");
+                        setAsset("all");
                         setSort("yield");
-                        setShowAll(false);
                       }}
                     >
                       reset to all strategies
@@ -296,11 +351,20 @@ export function StrategyFinder() {
                 )}
                 .
               </p>
-              {type === "all" && starter && (
+              {picked && simplest && (
+                <p className="mt-1 text-xs text-ink-muted">
+                  Want it simple?{" "}
+                  <button className="underline underline-offset-2 hover:text-ink" onClick={() => setHighlightId(simplest.id)}>
+                    Just deposit {activeAsset}: about {usd(simplest.earnings.net)} a year on {usd(amount)}, no loan
+                  </button>
+                  .
+                </p>
+              )}
+              {!picked && type === "all" && starter && (
                 <p className="mt-1 text-xs text-ink-muted">
                   Just starting out? The simplest pick is{" "}
                   <button className="underline underline-offset-2 hover:text-ink" onClick={() => {
-                      setType("simpleDeposit");
+                      setAsset(startAsset(starter));
                       setSort("risk");
                       setHighlightId(starter.id);
                     }}

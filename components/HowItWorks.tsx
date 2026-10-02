@@ -1,7 +1,7 @@
 const STEPS = [
   {
-    title: "Tell us your budget",
-    body: "Enter any amount to see example earnings.",
+    title: "Pick what you hold",
+    body: "Choose a token you own and an amount.",
     icon: (
       <>
         <circle cx="12" cy="12" r="9" />
