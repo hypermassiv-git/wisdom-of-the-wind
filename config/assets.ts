@@ -25,6 +25,8 @@ export interface BuiltInYield {
   staticApr: number;
   /** Short plain-English description of where the yield comes from. */
   source: string;
+  /** Token the yield builds up in, e.g. MON for LSTs (you keep the same LST, each worth more MON). Defaults to the asset itself. */
+  paidIn?: string;
   /** For PTs: fallback maturity date (ISO). In live mode it's read from the on-chain symbol. */
   maturity?: string;
   /**
@@ -77,6 +79,7 @@ export const ASSETS: AssetConfig[] = [
     isStable: false,
     supplyOnly: true,
     builtInYield: {
+      paidIn: "MON",
       kind: "lst",
       staticApr: 0.107,
       source: "MON staking rewards",
@@ -93,6 +96,7 @@ export const ASSETS: AssetConfig[] = [
     isStable: false,
     supplyOnly: true,
     builtInYield: {
+      paidIn: "MON",
       kind: "lst",
       staticApr: 0.129,
       source: "MON staking rewards",
@@ -109,6 +113,7 @@ export const ASSETS: AssetConfig[] = [
     isStable: false,
     supplyOnly: true,
     builtInYield: {
+      paidIn: "MON",
       kind: "lst",
       staticApr: 0.058,
       source: "MON staking rewards",
@@ -125,6 +130,7 @@ export const ASSETS: AssetConfig[] = [
     isStable: false,
     onchainPrefix: "PT-shMON-",
     builtInYield: {
+      paidIn: "MON",
       kind: "pt",
       staticApr: 0.116,
       source: "a fixed rate locked in until maturity",
@@ -145,6 +151,7 @@ export const ASSETS: AssetConfig[] = [
     family: "USD",
     isStable: true,
     builtInYield: {
+      paidIn: "AUSD",
       kind: "yieldStable",
       staticApr: 0.057,
       source: "the earnAUSD vault's yield",
@@ -174,6 +181,7 @@ export const ASSETS: AssetConfig[] = [
     isStable: true,
     onchainPrefix: "PT-AUSD-",
     builtInYield: {
+      paidIn: "AUSD",
       kind: "pt",
       staticApr: 0.059,
       source: "a fixed rate locked in until maturity",
