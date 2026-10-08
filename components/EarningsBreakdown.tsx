@@ -1,21 +1,33 @@
 import { baseName, displayName } from "@/config/assets";
 import { formatDate, usd } from "@/lib/format";
 import { daysToMaturity } from "@/lib/sortFilter";
-import type { Strategy } from "@/lib/engine/types";
+import type { Leg, Strategy } from "@/lib/engine/types";
+import { TokenIcon } from "./TokenIcon";
 
 /** Bar and dot colour per reward token, matching its icon. Other tokens use the generic reward colour. */
 const REWARD_COLOR: Record<string, string> = { DUST: "bg-dust", MON: "bg-mon" };
 const rewardColor = (token: string) => REWARD_COLOR[token] ?? "bg-reward";
 
+/** Yearly USD per token across these legs, in leg order. Interest is paid in the leg's own token. */
+function byToken(legs: Leg[], rate: (l: Leg) => number): [string, number][] {
+  const totals = new Map<string, number>();
+  for (const l of legs) totals.set(l.symbol, (totals.get(l.symbol) ?? 0) + l.amountUsd * rate(l));
+  return [...totals];
+}
+
 /** Yearly earnings on the chosen amount, as a simple sum: earned + rewards − paid = total. */
 export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalUsd: number }) {
-  const earned = s.legs
-    .filter((l) => l.role !== "borrow")
-    .reduce((sum, l) => sum + l.amountUsd * (l.baseRate + l.builtInRate), 0);
-  const paid = s.legs.filter((l) => l.role === "borrow").reduce((sum, l) => sum + l.amountUsd * l.baseRate, 0);
-  // One row per reward token: DUST first, then MON, then anything else.
-  const ORDER = ["DUST", "MON"];
-  const rank = (t: string) => (ORDER.includes(t) ? ORDER.indexOf(t) : ORDER.length);
+  const earnedByToken = byToken(
+    s.legs.filter((l) => l.role !== "borrow"),
+    (l) => l.baseRate + l.builtInRate,
+  );
+  const paidByToken = byToken(
+    s.legs.filter((l) => l.role === "borrow"),
+    (l) => l.baseRate,
+  ).filter(([, v]) => v > 0.5);
+  const earned = earnedByToken.reduce((sum, [, v]) => sum + v, 0);
+  // One row per reward token: MON first, other liquid tokens next, illiquid DUST always last.
+  const rank = (t: string) => (t === "MON" ? 0 : t === "DUST" ? 2 : 1);
   const rewards = Object.entries(s.earnings.rewardsByToken)
     .filter(([, v]) => v > 0.005)
     .sort(([a], [b]) => rank(a) - rank(b));
@@ -65,11 +77,15 @@ export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalU
       </div>
 
       <dl className="mt-3 space-y-1 text-sm tabular-nums">
-        <Row dot="bg-ink/85" label="Interest you earn" value={usd(earned)} />
-        {rewards.map(([token, value]) => (
-          <Row key={token} dot={rewardColor(token)} label={`${token} rewards`} value={usd(value)} reward />
+        {earnedByToken.map(([token, value]) => (
+          <Row key={token} dot="bg-ink/85" label="Interest you earn" value={usd(value)} token={token} />
         ))}
-        {paid > 0.5 && <Row label="Interest you pay on the loan" value={`−${usd(paid)}`} muted />}
+        {rewards.map(([token, value]) => (
+          <Row key={token} dot={rewardColor(token)} label="Rewards" value={usd(value)} token={token} reward />
+        ))}
+        {paidByToken.map(([token, value]) => (
+          <Row key={token} label="Interest you pay on the loan" value={`−${usd(value)}`} token={token} muted />
+        ))}
         <div className="flex justify-between border-t border-white/10 pt-1 font-semibold">
           <dt>Total</dt>
           <dd>{usd(s.earnings.net)}</dd>
@@ -83,12 +99,15 @@ function Row({
   dot,
   label,
   value,
+  token,
   muted,
   reward,
 }: {
   dot?: string;
   label: string;
   value: string;
+  /** Token the amount is paid in, shown after the dollar value: "$40 ◉ MON". */
+  token: string;
   muted?: boolean;
   reward?: boolean;
 }) {
@@ -98,7 +117,15 @@ function Row({
         <span className={`size-2 rounded-full ${dot ?? "bg-transparent"}`} aria-hidden />
         {label}
       </dt>
-      <dd className={reward ? "font-semibold text-reward" : muted ? "text-ink-muted" : "font-semibold"}>{value}</dd>
+      <dd
+        className={`flex items-center gap-1 ${reward ? "font-semibold text-reward" : muted ? "text-ink-muted" : "font-semibold"}`}
+      >
+        {value}
+        <span className="ml-0.5 flex items-center gap-1 text-xs font-normal text-ink-muted">
+          <TokenIcon symbol={token} size={14} />
+          {baseName(token)}
+        </span>
+      </dd>
     </div>
   );
 }
