@@ -9,13 +9,16 @@ export interface ShareCardFile {
   copied: boolean;
   /** Link to X's composer with the post text filled in. */
   intentUrl: string;
+  /** Set on phones: the card isn't saved yet, and step 1 saves it (share sheet → Save Image). */
+  file?: File;
 }
 
 /** Step-by-step guide for attaching the downloaded card to an X post (X's post link can't carry an image). */
 export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
-  // Step 1 (download) is done by the time this opens.
-  const [step, setStep] = useState(2);
+  const mobile = !!card.file;
+  // On computers, step 1 (download) is done by the time this opens.
+  const [step, setStep] = useState(mobile ? 1 : 2);
   const [paste, setPaste] = useState("Ctrl+V");
 
   useEffect(() => {
@@ -28,6 +31,22 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
     a.href = card.url;
     a.download = card.fileName;
     a.click();
+  }
+
+  /** Phones: the share sheet offers "Save Image" (to Photos). Without file sharing, download it instead. */
+  async function save() {
+    const files = [card.file!];
+    if (navigator.canShare?.({ files })) {
+      try {
+        await navigator.share({ files });
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        download();
+      }
+    } else {
+      download();
+    }
+    setStep(2);
   }
 
   return (
@@ -61,15 +80,26 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
       />
 
       <ol className="mt-5 space-y-1">
-        <Step n={1} step={step} title="Your card is downloaded">
-          <p>
-            Saved as <span className="break-all text-ink-secondary">{card.fileName}</span>.
-            {card.copied && " It's also copied, ready to paste."}
-          </p>
-          <button onClick={download} className="mt-1 text-xs underline underline-offset-2 hover:text-ink">
-            Download again
-          </button>
-        </Step>
+        {mobile ? (
+          <Step n={1} step={step} title="Save the card">
+            <p>Tap Save card, then choose Save Image. Or press and hold the card above to save it.</p>
+            {step === 1 && (
+              <button onClick={save} className="btn-primary mt-3 h-10 px-5 text-sm">
+                Save card
+              </button>
+            )}
+          </Step>
+        ) : (
+          <Step n={1} step={step} title="Your card is downloaded">
+            <p>
+              Saved as <span className="break-all text-ink-secondary">{card.fileName}</span>.
+              {card.copied && " It's also copied, ready to paste."}
+            </p>
+            <button onClick={download} className="mt-1 text-xs underline underline-offset-2 hover:text-ink">
+              Download again
+            </button>
+          </Step>
+        )}
         <Step n={2} step={step} title="Open X">
           <p>Your post is written for you and tags @Neverland_Money.</p>
           {step === 2 && (
@@ -85,7 +115,9 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
           )}
         </Step>
         <Step n={3} step={step} title="Attach the card">
-          {card.copied ? (
+          {mobile ? (
+            <p>In X, tap the photo icon under your post and pick the card from your Photos.</p>
+          ) : card.copied ? (
             <p>
               Click in the post and press <Key>{paste}</Key> to paste it. Or click the image icon and pick the file
               from your Downloads.
@@ -108,9 +140,12 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
           )}
         </Step>
       </ol>
-      {step === 2 && (
-        <button onClick={() => setStep(3)} className="mt-2 text-xs text-ink-muted underline underline-offset-2 hover:text-ink">
-          X is already open? Skip to the next step
+      {step <= 2 && (
+        <button
+          onClick={() => setStep(step + 1)}
+          className="mt-2 text-xs text-ink-muted underline underline-offset-2 hover:text-ink"
+        >
+          {step === 1 ? "Already saved it? Skip to the next step" : "X is already open? Skip to the next step"}
         </button>
       )}
     </dialog>
