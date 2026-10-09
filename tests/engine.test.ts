@@ -26,6 +26,18 @@ describe("runEngine on mock data", () => {
     }
   });
 
+  it("keeps DUST out of totals and ranking, as held tokens with a price", () => {
+    const withDust = runEngine(snapshot, { ...ENGINE_CONFIG, heldRewards: [], maxResults: 999 });
+    const counted = new Map(withDust.map((s) => [s.id, s.netApr]));
+    for (const s of all) {
+      expect(s.earnings.rewardsByToken.DUST).toBeUndefined();
+      expect(s.heldPriceUsd.DUST).toBe(snapshot.dustPriceUsd);
+      const prev = counted.get(s.id);
+      if (prev !== undefined) expect(s.netApr).toBeLessThanOrEqual(prev + 1e-12);
+    }
+    expect(all.some((s) => (s.earnings.heldByToken.DUST ?? 0) > 0)).toBe(true);
+  });
+
   it("respects a higher threshold", () => {
     const strict = runEngine(snapshot, { ...ENGINE_CONFIG, minNetApr: 0.12, maxResults: 999 });
     expect(strict.length).toBeGreaterThan(0);

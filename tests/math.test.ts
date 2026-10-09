@@ -89,6 +89,18 @@ describe("positionEarnings", () => {
     expect(e.rewardsByToken.DUST).toBeCloseTo(50);
     expect(e.rewardsByToken.MON).toBeCloseTo(10); // unlisted tokens valued at 1
   });
+
+  it("puts bonus tokens on top of the total instead of inside it", () => {
+    const legs = [
+      leg({ role: "lend", amountUsd: 1000, baseRate: 0.03, incentives: [{ token: "DUST", apr: 0.05 }, { token: "MON", apr: 0.01 }] }),
+    ];
+    const e = positionEarnings(legs, { DUST: 1 }, ["DUST"]);
+    expect(e.rewardsByToken).toEqual({ MON: 10 });
+    expect(e.heldByToken.DUST).toBeCloseTo(50);
+    expect(e.rewards).toBeCloseTo(10);
+    expect(e.net).toBeCloseTo(40);
+    expect(spreadEarnings(legs, 0, { DUST: 1 }, ["DUST"]).heldByToken.DUST).toBeCloseTo(50);
+  });
 });
 
 describe("spreadEarnings", () => {

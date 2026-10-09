@@ -26,6 +26,8 @@ export interface Earnings {
   rewards: number;
   net: number;
   rewardsByToken: Record<string, number>;
+  /** Held reward tokens (DUST), as dollar-equivalents for conversion only; not in `rewards` or `net`. */
+  heldByToken: Record<string, number>;
 }
 
 /** What a generator produces, before risk and wording are added. */
@@ -66,6 +68,8 @@ export interface Strategy extends Candidate {
   /** Structured risks for icons/chips; the first is the main one. */
   riskFactors: RiskFactor[];
   text: StrategyText;
+  /** Market price of each held reward token, to show it as a token amount (e.g. 430 DUST). */
+  heldPriceUsd: Record<string, number>;
 }
 
 export interface MarketReserve {

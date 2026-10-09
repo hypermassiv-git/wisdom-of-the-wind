@@ -13,7 +13,7 @@ const TERMS: [string, string][] = [
   ["Loop", "Deposit, borrow, turn the loan into more of your deposit, and repeat. It makes your position bigger than the money you started with."],
   [
     "DUST",
-    "Neverland's reward token. Neverland pays it to depositors and borrowers on top of interest. Earnings here count DUST at today's market price{dustPrice}.",
+    "Your piece of Neverland. You collect it for depositing and borrowing, on top of interest. Lock it to get veDUST, which pays you part of Neverland's revenue in USDC every week and gives you a vote on how Neverland is run.",
   ],
   [
     "MON rewards",
@@ -44,8 +44,7 @@ const RISK_LEVELS: [RiskLevel, string][] = [
   ["High", "Borrowing against a different kind of asset plus other factors, where a price drop could trigger liquidation."],
 ];
 
-export function Glossary({ dustPriceUsd }: { dustPriceUsd?: number }) {
-  const dustPrice = dustPriceUsd ? ` ($${dustPriceUsd.toFixed(4)})` : "";
+export function Glossary() {
   return (
     <details className="group panel mt-5 px-5 py-4 text-sm sm:px-6">
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 font-semibold">
@@ -53,15 +52,12 @@ export function Glossary({ dustPriceUsd }: { dustPriceUsd?: number }) {
         <Chevron />
       </summary>
       <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
-        {TERMS.map(([term, raw]) => {
-          const def = raw.replace("{dustPrice}", dustPrice);
-          return (
+        {TERMS.map(([term, def]) => (
           <div key={term}>
             <dt className="font-semibold">{term}</dt>
             <dd className="mt-0.5 leading-relaxed text-ink-secondary">{def}</dd>
           </div>
-          );
-        })}
+        ))}
       </dl>
       <div className="label mt-5">Risk levels</div>
       <dl className="mt-3 space-y-2.5">

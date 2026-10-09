@@ -1,5 +1,6 @@
 import { baseName, displayName, getAsset } from "@/config/assets";
-import { formatDate, usd } from "@/lib/format";
+import { formatDate, tokenAmount, usd } from "@/lib/format";
+import { heldTokens } from "@/lib/engine/math";
 import { daysToMaturity } from "@/lib/sortFilter";
 import type { Leg, Strategy } from "@/lib/engine/types";
 import { TokenIcon } from "./TokenIcon";
@@ -39,12 +40,14 @@ export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalU
   const paidByToken = byToken(
     s.legs.filter((l) => l.role === "borrow").map((l) => [l.symbol, l.amountUsd * l.baseRate]),
   ).filter(([, v]) => v > 0.5);
-  // One row per reward token: MON first, other liquid tokens next, illiquid DUST always last.
-  const rank = (t: string) => (t === "MON" ? 0 : t === "DUST" ? 2 : 1);
+  // One row per reward token: MON first, then other tokens.
   const rewards = Object.entries(s.earnings.rewardsByToken)
     .filter(([, v]) => v > 0.005)
-    .sort(([a], [b]) => rank(a) - rank(b));
-  if (!rewards.length) rewards.push(["DUST", 0]);
+    .sort(([a], [b]) => (a === "MON" ? -1 : b === "MON" ? 1 : 0));
+  // DUST you build up, in tokens below the total: it's your piece of Neverland, not spending money.
+  const held = Object.entries(s.earnings.heldByToken)
+    .map(([token, v]) => [token, heldTokens(v, s.heldPriceUsd[token])] as const)
+    .filter(([, n]) => n >= 0.5);
 
   const positive = earned + s.earnings.rewards;
   const earnedShare = positive > 0 ? (earned / positive) * 100 : 0;
@@ -103,6 +106,11 @@ export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalU
           <dt>Total</dt>
           <dd>{usd(s.earnings.net)}</dd>
         </div>
+        {held.map(([token, n], i) => (
+          <div key={token} className={i === 0 ? "border-t border-white/10 pt-1" : ""}>
+            <Row dot={rewardColor(token)} label="Your piece of Neverland" value={`+${tokenAmount(n)}`} token={token} reward />
+          </div>
+        ))}
       </dl>
     </div>
   );

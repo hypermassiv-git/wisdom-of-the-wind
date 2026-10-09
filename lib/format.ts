@@ -13,6 +13,11 @@ export function usd(amount: number, digits = 0): string {
   })}`;
 }
 
+/** Token amount without a currency: "430", "2,100", "4.5". */
+export function tokenAmount(n: number): string {
+  return n.toLocaleString("en-US", { maximumFractionDigits: Math.abs(n) >= 10 ? 0 : 1 });
+}
+
 export function signedUsd(amount: number): string {
   return amount >= 0 ? `+${usd(amount)}` : usd(amount);
 }

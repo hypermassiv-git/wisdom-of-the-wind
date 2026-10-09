@@ -96,7 +96,7 @@ export function buildCarry(
 }
 
 export function netOf(c: Candidate, ctx: GenContext): number {
-  return positionEarnings(c.legs, ctx.config.rewardValuation).net;
+  return positionEarnings(c.legs, ctx.config.rewardValuation, ctx.config.heldRewards).net;
 }
 
 /** Keeps the highest-earning candidate per group key. */

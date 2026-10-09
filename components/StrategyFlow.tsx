@@ -1,6 +1,7 @@
 import { displayName } from "@/config/assets";
 import { ENGINE_CONFIG } from "@/config/engine";
-import { usd } from "@/lib/format";
+import { tokenAmount, usd } from "@/lib/format";
+import { heldTokens } from "@/lib/engine/math";
 import type { Leg, Strategy } from "@/lib/engine/types";
 import { TokenIcon } from "./TokenIcon";
 
@@ -10,15 +11,27 @@ function shortMarket(name: string): string {
   return name === "main pool" ? "main pool" : name.replace(" isolated market", " mkt");
 }
 
-/** Yearly reward rate per token for this leg, largest first, hiding tiny ones. */
-function rewardRates(leg: Leg): { token: string; rate: number }[] {
-  return leg.incentives
-    .map((i) => ({ token: i.token, rate: i.apr * (ENGINE_CONFIG.rewardValuation[i.token] ?? 1) }))
-    .filter((r) => r.rate > 0.0005)
-    .sort((a, b) => b.rate - a.rate);
+/**
+ * Yearly rewards per token for this leg, hiding tiny ones: "+$30" for tokens counted in dollars,
+ * then "+430" for held tokens like DUST, which are shown in tokens only.
+ */
+function rewardLines(leg: Leg, heldPriceUsd: Record<string, number>): { token: string; text: string }[] {
+  const { heldRewards, rewardValuation } = ENGINE_CONFIG;
+  const spent = leg.incentives
+    .filter((i) => !heldRewards.includes(i.token))
+    .map((i) => ({ token: i.token, usd: i.apr * (rewardValuation[i.token] ?? 1) * leg.amountUsd }))
+    .filter((r) => r.usd >= 0.5)
+    .sort((a, b) => b.usd - a.usd)
+    .map((r) => ({ token: r.token, text: `+${usd(r.usd)}` }));
+  const held = leg.incentives
+    .filter((i) => heldRewards.includes(i.token))
+    .map((i) => ({ token: i.token, n: heldTokens(i.apr * leg.amountUsd, heldPriceUsd[i.token]) }))
+    .filter((r) => r.n >= 0.5)
+    .map((r) => ({ token: r.token, text: `+${tokenAmount(r.n)}` }));
+  return [...spent, ...held];
 }
 
-function Pill({ leg }: { leg: Leg }) {
+function Pill({ leg, heldPriceUsd }: { leg: Leg; heldPriceUsd: Record<string, number> }) {
   const paying = leg.role === "borrow";
   const rate = paying ? leg.baseRate : leg.baseRate + leg.builtInRate;
   return (
@@ -35,9 +48,10 @@ function Pill({ leg }: { leg: Leg }) {
           {paying ? "Costs" : "Earns"} {usd(rate * leg.amountUsd)}/yr
         </span>
       </div>
-      {rewardRates(leg).map(({ token, rate }) => (
+      {rewardLines(leg, heldPriceUsd).map(({ token, text }) => (
         <div key={token} className="mt-0.5 flex items-center gap-1 text-xs tabular-nums text-reward">
-          <TokenIcon symbol={token} size={13} />+{usd(rate * leg.amountUsd)}/yr {token}
+          <TokenIcon symbol={token} size={13} />
+          {text}/yr {token}
         </div>
       ))}
     </div>
@@ -69,11 +83,11 @@ export function StrategyFlow({ s }: { s: Strategy }) {
   const loop = s.type === "yieldLoop";
   return (
     <div aria-label="How the money moves" className="flex flex-wrap items-center gap-2">
-      <Pill leg={deposit} />
+      <Pill leg={deposit} heldPriceUsd={s.heldPriceUsd} />
       {borrow && <Arrow loop={loop} />}
-      {borrow && <Pill leg={borrow} />}
+      {borrow && <Pill leg={borrow} heldPriceUsd={s.heldPriceUsd} />}
       {lend && <Arrow />}
-      {lend && <Pill leg={lend} />}
+      {lend && <Pill leg={lend} heldPriceUsd={s.heldPriceUsd} />}
       {loop && (
         <span className="rounded-full bg-violet/15 px-2.5 py-1 text-xs font-semibold text-lavender ring-1 ring-violet/30">
           ×{(deposit.amountUsd / (deposit.amountUsd - borrow!.amountUsd)).toFixed(1)} loop
