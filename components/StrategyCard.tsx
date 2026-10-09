@@ -180,8 +180,8 @@ export function StrategyCard({
           <span className="text-sm font-semibold tabular-nums text-ink-muted">#{rank}</span>
           <ShareButton s={s} principalUsd={principalUsd} fetchedAt={fetchedAt} />
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="label">{TYPE_LABEL[s.type]}</span>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <span className="label tracking-[0.1em]">{TYPE_LABEL[s.type]}</span>
           <RiskBadge level={s.risk} reasons={s.riskReasons} />
         </div>
         <h2 className="mt-1 text-lg font-semibold tracking-[0.02em]">{s.text.name}</h2>
