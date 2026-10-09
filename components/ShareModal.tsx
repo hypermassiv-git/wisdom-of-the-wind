@@ -11,6 +11,8 @@ export interface ShareCardFile {
   intentUrl: string;
   /** Set on phones: the card isn't saved yet, and step 1 saves it (share sheet → Save Image). */
   file?: File;
+  /** Set on phones: opens the X app's composer, where the user is already signed in. */
+  appUrl?: string;
 }
 
 /** Step-by-step guide for attaching the downloaded card to an X post (X's post link can't carry an image). */
@@ -20,6 +22,8 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
   // On computers, step 1 (download) is done by the time this opens.
   const [step, setStep] = useState(mobile ? 1 : 2);
   const [paste, setPaste] = useState("Ctrl+V");
+  // The X app didn't open (not installed?), so offer X in the browser.
+  const [noApp, setNoApp] = useState(false);
 
   useEffect(() => {
     ref.current?.showModal();
@@ -31,6 +35,15 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
     a.href = card.url;
     a.download = card.fileName;
     a.click();
+  }
+
+  /** Phones: open the X app. If the page is still showing a moment later, the app didn't open. */
+  function openApp() {
+    window.location.href = card.appUrl!;
+    setStep(3);
+    setTimeout(() => {
+      if (document.visibilityState === "visible") setNoApp(true);
+    }, 1500);
   }
 
   /** Phones: the share sheet offers "Save Image" (to Photos). Without file sharing, download it instead. */
@@ -102,16 +115,35 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
         )}
         <Step n={2} step={step} title="Open X">
           <p>Your post is written for you and tags @Neverland_Money.</p>
-          {step === 2 && (
-            <a
-              href={card.intentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setStep(3)}
-              className="btn-primary mt-3 h-10 px-5 text-sm"
-            >
-              Open X post <span aria-hidden>↗</span>
-            </a>
+          {step === 2 &&
+            (card.appUrl ? (
+              <button onClick={openApp} className="btn-primary mt-3 h-10 px-5 text-sm">
+                Open X app <span aria-hidden>↗</span>
+              </button>
+            ) : (
+              <a
+                href={card.intentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setStep(3)}
+                className="btn-primary mt-3 h-10 px-5 text-sm"
+              >
+                Open X post <span aria-hidden>↗</span>
+              </a>
+            ))}
+          {noApp && (
+            <p className="mt-2 text-xs">
+              X app didn&apos;t open?{" "}
+              <a
+                href={card.intentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 hover:text-ink"
+              >
+                Post from the browser instead
+              </a>
+              .
+            </p>
           )}
         </Step>
         <Step n={3} step={step} title="Attach the card">

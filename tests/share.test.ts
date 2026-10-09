@@ -4,7 +4,7 @@ import { mockSnapshot } from "@/lib/data/mock";
 import { runEngine } from "@/lib/engine";
 import { heldTokens } from "@/lib/engine/math";
 import { breakdown } from "@/lib/breakdown";
-import { shareFileName, shareText, xIntentUrl } from "@/lib/share";
+import { shareFileName, shareText, xAppUrl, xIntentUrl } from "@/lib/share";
 
 const all = runEngine(mockSnapshot(new Date("2026-01-01T00:00:00Z")), { ...ENGINE_CONFIG, maxResults: 999 });
 
@@ -36,6 +36,15 @@ describe("share helpers", () => {
     expect(url.origin + url.pathname).toBe("https://x.com/intent/post");
     expect(url.searchParams.get("text")).toBe("A & B: $5 @Neverland_Money\nnext");
     expect(url.searchParams.has("url")).toBe(false);
+  });
+});
+
+describe("xAppUrl", () => {
+  it("opens the X app's composer with the text intact", () => {
+    const text = "A & B: borrow AUSD\n\nPossible on @Neverland_Money";
+    const url = xAppUrl(text);
+    expect(url.startsWith("twitter://post?message=")).toBe(true);
+    expect(decodeURIComponent(url.slice("twitter://post?message=".length))).toBe(text);
   });
 });
 
