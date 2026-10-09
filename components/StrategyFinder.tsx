@@ -377,7 +377,14 @@ export function StrategyFinder() {
               )}
               <div className="mx-auto mt-4 grid max-w-2xl gap-4 lg:max-w-none lg:grid-cols-2">
                 {strategies.map((s, i) => (
-                  <StrategyCard key={s.id} s={s} rank={i + 1} principalUsd={amount} highlight={s.id === highlightId} />
+                  <StrategyCard
+                    key={s.id}
+                    s={s}
+                    rank={i + 1}
+                    principalUsd={amount}
+                    highlight={s.id === highlightId}
+                    fetchedAt={data.fetchedAt}
+                  />
                 ))}
               </div>
               {matching.length > ENGINE_CONFIG.maxResults && (

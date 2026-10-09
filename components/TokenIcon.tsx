@@ -5,7 +5,7 @@
 
 import { getAsset } from "@/config/assets";
 
-interface IconStyle {
+export interface IconStyle {
   /** Circle fill (colour or CSS gradient). */
   bg: string;
   /** Ring colour (colour or CSS gradient). */
@@ -48,10 +48,15 @@ const STYLES: Record<string, IconStyle> = {
 
 const FALLBACK: IconStyle = { bg: "#374151", ring: "#6B7280", ringWeight: 1, scale: 0.6 };
 
-export function TokenIcon({ symbol, size = 18 }: { symbol: string; size?: number }) {
+/** Icon style and file key for a symbol; unknown tokens get the default icon. Also used by the share card. */
+export function iconStyle(symbol: string): { src: string; style: IconStyle } {
   const key = (getAsset(symbol)?.symbol ?? symbol).toLowerCase();
   const known = key in STYLES;
-  const s = STYLES[key] ?? FALLBACK;
+  return { src: `/tokens/${known ? key : "default"}.svg`, style: STYLES[key] ?? FALLBACK };
+}
+
+export function TokenIcon({ symbol, size = 18 }: { symbol: string; size?: number }) {
+  const { src, style: s } = iconStyle(symbol);
   const ring = s.ringWeight ? Math.max(1, Math.round((size / 24) * s.ringWeight)) : 0;
   const inner = size * s.scale;
   return (
@@ -66,7 +71,7 @@ export function TokenIcon({ symbol, size = 18 }: { symbol: string; size?: number
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`/tokens/${known ? key : "default"}.svg`}
+          src={src}
           alt=""
           width={inner}
           height={inner}
