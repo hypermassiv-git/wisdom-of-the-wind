@@ -2,10 +2,10 @@
 
 import { breakdown } from "@/lib/breakdown";
 import { tokenAmount, usd } from "@/lib/format";
-import { startAsset } from "@/lib/sortFilter";
 import type { Strategy } from "@/lib/engine/types";
 
 export const SITE_URL = "https://wisdom-of-the-wind.vercel.app";
+export const NEVERLAND_URL = "https://app.neverland.money";
 
 /** "wisdom-of-the-wind-boosted-shmon-yield.png" */
 export function shareFileName(s: Strategy): string {
@@ -25,9 +25,9 @@ export function shareText(s: Strategy, principalUsd: number): string {
   return `${s.text.name}: about ${usd(s.earnings.net)} a year on ${usd(principalUsd)} on Neverland${piece}.\n\nFound it with Wisdom of the Wind 🌬️`;
 }
 
-/** Opens the site on the strategies that start with the same token. */
-export function shareLink(s: Strategy): string {
-  return `${SITE_URL}/?have=${encodeURIComponent(startAsset(s))}`;
+/** The post links to Neverland, where readers can put the strategy to work. */
+export function shareLink(): string {
+  return NEVERLAND_URL;
 }
 
 /** X's post composer with the text and link filled in. */

@@ -5,7 +5,6 @@ import { runEngine } from "@/lib/engine";
 import { heldTokens } from "@/lib/engine/math";
 import { breakdown } from "@/lib/breakdown";
 import { shareFileName, shareLink, shareText, xIntentUrl } from "@/lib/share";
-import { startAsset } from "@/lib/sortFilter";
 
 const all = runEngine(mockSnapshot(new Date("2026-01-01T00:00:00Z")), { ...ENGINE_CONFIG, maxResults: 999 });
 
@@ -30,12 +29,8 @@ describe("share helpers", () => {
     if (noDust) expect(shareText(noDust, 1000)).not.toContain("DUST");
   });
 
-  it("links back to strategies for the same start token", () => {
-    for (const s of all) {
-      const url = new URL(shareLink(s));
-      expect(url.origin).toBe("https://wisdom-of-the-wind.vercel.app");
-      expect(url.searchParams.get("have")).toBe(startAsset(s));
-    }
+  it("links the post to Neverland", () => {
+    expect(shareLink()).toBe("https://app.neverland.money");
   });
 
   it("builds an X intent link that keeps text and url intact", () => {
