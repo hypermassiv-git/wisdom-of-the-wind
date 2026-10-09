@@ -8,6 +8,7 @@ import { TYPE_LABEL } from "@/lib/strategyTypes";
 import { EarningsBreakdown } from "./EarningsBreakdown";
 import { StrategyFlow } from "./StrategyFlow";
 import { RiskBadge } from "./RiskBadge";
+import { ShareButton } from "./ShareButton";
 
 
 /**
@@ -157,11 +158,14 @@ export function StrategyCard({
   rank,
   principalUsd,
   highlight = false,
+  fetchedAt,
 }: {
   s: Strategy;
   rank: number;
   principalUsd: number;
   highlight?: boolean;
+  /** When the rates were checked, printed on the share card. */
+  fetchedAt?: string;
 }) {
   const stable = getAsset(s.legs.find((l) => l.role === "deposit")!.symbol)?.family === "USD";
   return (
@@ -174,9 +178,12 @@ export function StrategyCard({
       <header>
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm font-semibold tabular-nums text-ink-muted">#{rank}</span>
+          <ShareButton s={s} principalUsd={principalUsd} fetchedAt={fetchedAt} />
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <span className="label tracking-[0.1em]">{TYPE_LABEL[s.type]}</span>
           <RiskBadge level={s.risk} reasons={s.riskReasons} />
         </div>
-        <div className="label mt-3">{TYPE_LABEL[s.type]}</div>
         <h2 className="mt-1 text-lg font-semibold tracking-[0.02em]">{s.text.name}</h2>
       </header>
 
