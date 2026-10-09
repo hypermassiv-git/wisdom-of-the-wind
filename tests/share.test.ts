@@ -13,23 +13,22 @@ describe("share helpers", () => {
     for (const s of all) expect(shareFileName(s)).toMatch(/^wisdom-of-the-wind-[a-z0-9]+(-[a-z0-9]+)*\.png$/);
   });
 
-  it("writes post text with the yearly dollars and amount, tagging Neverland and with no links", () => {
+  it("describes every strategy type in a neutral voice, with no numbers or links, ending on Neverland", () => {
+    const types = new Set(all.map((s) => s.type));
+    expect(types.size).toBe(5);
     for (const s of all) {
-      const text = shareText(s, 1000);
-      expect(text).toContain(s.text.name);
-      expect(text).toContain("a year on $1,000");
-      expect(text).toContain("@Neverland_Money");
-      expect(text).not.toMatch(/https?:\/\/|\.money|\.app|Wisdom of the Wind/);
+      const text = shareText(s);
+      expect(text).toMatch(/\n\nPossible on @Neverland_Money$/);
+      // Token names can hold a digit (USDT0), so ban amounts rather than every digit.
+      expect(text).not.toMatch(/[$%]|\d{2,}|https?:|Wisdom of the Wind|undefined|\b(I|my|me)\b/);
     }
   });
 
-  it("gives DUST in tokens as your piece of Neverland, never in dollars", () => {
-    const withDust = all.find((s) => (s.earnings.heldByToken.DUST ?? 0) > 0)!;
-    const text = shareText(withDust, 1000);
-    expect(text).toMatch(/plus [\d,.]+ DUST toward my piece of Neverland/);
-    expect(text).not.toMatch(/\$[\d,.]+ (in )?DUST/);
-    const noDust = all.find((s) => !s.earnings.heldByToken.DUST);
-    if (noDust) expect(shareText(noDust, 1000)).not.toContain("DUST");
+  it("mentions DUST, without an amount, only when the strategy builds it", () => {
+    for (const s of all) {
+      const builds = breakdown(s).held.length > 0;
+      expect(shareText(s).includes("Builds DUST along the way")).toBe(builds);
+    }
   });
 
   it("builds an X intent link with only the text", () => {

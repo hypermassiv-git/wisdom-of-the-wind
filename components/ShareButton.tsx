@@ -33,7 +33,7 @@ export function ShareButton({ s, principalUsd, fetchedAt }: { s: Strategy; princ
     if (busy) return;
     setBusy(true);
     const fileName = shareFileName(s);
-    const text = shareText(s, principalUsd);
+    const text = shareText(s);
     const blob = renderShareCard(s, principalUsd, fetchedAt);
     const touch = matchMedia("(pointer: coarse)").matches && typeof navigator.canShare === "function";
     const copied = touch ? Promise.resolve(false) : copyImage(blob);
