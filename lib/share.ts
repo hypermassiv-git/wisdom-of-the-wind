@@ -1,11 +1,10 @@
-/** Text, links and file name for sharing a strategy on X. The card image itself is drawn in lib/shareCard.ts. */
+/** Post text, X link and file name for sharing a strategy on X. The card image itself is drawn in lib/shareCard.ts. */
 
 import { breakdown } from "@/lib/breakdown";
 import { tokenAmount, usd } from "@/lib/format";
 import type { Strategy } from "@/lib/engine/types";
 
 export const SITE_URL = "https://wisdom-of-the-wind.vercel.app";
-export const NEVERLAND_URL = "https://app.neverland.money";
 
 /** "wisdom-of-the-wind-boosted-shmon-yield.png" */
 export function shareFileName(s: Strategy): string {
@@ -18,19 +17,20 @@ export function shareFileName(s: Strategy): string {
   return `wisdom-of-the-wind-${slug || "strategy"}.png`;
 }
 
-/** The post text. DUST is given in tokens, never dollars. The link is passed separately so X shows it once. */
+/** Neverland's X account, tagged in every post. */
+export const NEVERLAND_X = "@Neverland_Money";
+
+/**
+ * The post text: plain and factual, tagging Neverland. No links, since X shows posts with links to fewer people.
+ * DUST is given in tokens, never dollars.
+ */
 export function shareText(s: Strategy, principalUsd: number): string {
   const held = breakdown(s).held.map(([token, n]) => `${tokenAmount(n)} ${token}`);
-  const piece = held.length ? `, plus ${held.join(" and ")}, my piece of Neverland` : "";
-  return `${s.text.name}: about ${usd(s.earnings.net)} a year on ${usd(principalUsd)} on Neverland${piece}.\n\nFound it with Wisdom of the Wind 🌬️`;
+  const piece = held.length ? `, plus ${held.join(" and ")} toward my piece of Neverland` : "";
+  return `On ${NEVERLAND_X}: ${s.text.name}\n\nAbout ${usd(s.earnings.net)} a year on ${usd(principalUsd)} at today's rates${piece}.`;
 }
 
-/** The post links to Neverland, where readers can put the strategy to work. */
-export function shareLink(): string {
-  return NEVERLAND_URL;
-}
-
-/** X's post composer with the text and link filled in. */
-export function xIntentUrl(text: string, link: string): string {
-  return `https://x.com/intent/post?${new URLSearchParams({ text, url: link })}`;
+/** X's post composer with the text filled in. */
+export function xIntentUrl(text: string): string {
+  return `https://x.com/intent/post?${new URLSearchParams({ text })}`;
 }

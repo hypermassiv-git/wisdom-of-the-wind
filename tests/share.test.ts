@@ -4,7 +4,7 @@ import { mockSnapshot } from "@/lib/data/mock";
 import { runEngine } from "@/lib/engine";
 import { heldTokens } from "@/lib/engine/math";
 import { breakdown } from "@/lib/breakdown";
-import { shareFileName, shareLink, shareText, xIntentUrl } from "@/lib/share";
+import { shareFileName, shareText, xIntentUrl } from "@/lib/share";
 
 const all = runEngine(mockSnapshot(new Date("2026-01-01T00:00:00Z")), { ...ENGINE_CONFIG, maxResults: 999 });
 
@@ -13,31 +13,30 @@ describe("share helpers", () => {
     for (const s of all) expect(shareFileName(s)).toMatch(/^wisdom-of-the-wind-[a-z0-9]+(-[a-z0-9]+)*\.png$/);
   });
 
-  it("writes post text with the yearly dollars and amount", () => {
-    const s = all[0];
-    const text = shareText(s, 1000);
-    expect(text).toContain(s.text.name);
-    expect(text).toContain("a year on $1,000");
+  it("writes post text with the yearly dollars and amount, tagging Neverland and with no links", () => {
+    for (const s of all) {
+      const text = shareText(s, 1000);
+      expect(text).toContain(s.text.name);
+      expect(text).toContain("a year on $1,000");
+      expect(text).toContain("@Neverland_Money");
+      expect(text).not.toMatch(/https?:\/\/|\.money|\.app|Wisdom of the Wind/);
+    }
   });
 
   it("gives DUST in tokens as your piece of Neverland, never in dollars", () => {
     const withDust = all.find((s) => (s.earnings.heldByToken.DUST ?? 0) > 0)!;
     const text = shareText(withDust, 1000);
-    expect(text).toMatch(/plus [\d,.]+ DUST, my piece of Neverland/);
+    expect(text).toMatch(/plus [\d,.]+ DUST toward my piece of Neverland/);
     expect(text).not.toMatch(/\$[\d,.]+ (in )?DUST/);
     const noDust = all.find((s) => !s.earnings.heldByToken.DUST);
     if (noDust) expect(shareText(noDust, 1000)).not.toContain("DUST");
   });
 
-  it("links the post to Neverland", () => {
-    expect(shareLink()).toBe("https://app.neverland.money");
-  });
-
-  it("builds an X intent link that keeps text and url intact", () => {
-    const url = new URL(xIntentUrl("A & B: $5 🌬️\nnext", "https://x.test/?have=PT-AUSD"));
+  it("builds an X intent link with only the text", () => {
+    const url = new URL(xIntentUrl("A & B: $5 @Neverland_Money\nnext"));
     expect(url.origin + url.pathname).toBe("https://x.com/intent/post");
-    expect(url.searchParams.get("text")).toBe("A & B: $5 🌬️\nnext");
-    expect(url.searchParams.get("url")).toBe("https://x.test/?have=PT-AUSD");
+    expect(url.searchParams.get("text")).toBe("A & B: $5 @Neverland_Money\nnext");
+    expect(url.searchParams.has("url")).toBe(false);
   });
 });
 

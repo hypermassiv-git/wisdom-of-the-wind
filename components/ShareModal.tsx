@@ -71,7 +71,7 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
           </button>
         </Step>
         <Step n={2} step={step} title="Open X">
-          <p>Your post is written for you, with a link to Neverland.</p>
+          <p>Your post is written for you and tags @Neverland_Money.</p>
           {step === 2 && (
             <a
               href={card.intentUrl}

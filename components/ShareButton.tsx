@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Strategy } from "@/lib/engine/types";
-import { shareFileName, shareLink, shareText, xIntentUrl } from "@/lib/share";
+import { shareFileName, shareText, xIntentUrl } from "@/lib/share";
 import { renderShareCard } from "@/lib/shareCard";
 import { type ShareCardFile, ShareModal } from "./ShareModal";
 
@@ -34,7 +34,6 @@ export function ShareButton({ s, principalUsd, fetchedAt }: { s: Strategy; princ
     setBusy(true);
     const fileName = shareFileName(s);
     const text = shareText(s, principalUsd);
-    const link = shareLink();
     const blob = renderShareCard(s, principalUsd, fetchedAt);
     const touch = matchMedia("(pointer: coarse)").matches && typeof navigator.canShare === "function";
     const copied = touch ? Promise.resolve(false) : copyImage(blob);
@@ -44,7 +43,7 @@ export function ShareButton({ s, principalUsd, fetchedAt }: { s: Strategy; princ
         const file = new File([png], fileName, { type: "image/png" });
         if (navigator.canShare({ files: [file] })) {
           try {
-            await navigator.share({ files: [file], text: `${text}\n${link}` });
+            await navigator.share({ files: [file], text });
             return;
           } catch (e) {
             if (e instanceof DOMException && e.name === "AbortError") return;
@@ -57,7 +56,7 @@ export function ShareButton({ s, principalUsd, fetchedAt }: { s: Strategy; princ
       a.href = url;
       a.download = fileName;
       a.click();
-      setCard({ url, fileName, copied: await copied, intentUrl: xIntentUrl(text, link) });
+      setCard({ url, fileName, copied: await copied, intentUrl: xIntentUrl(text) });
     } catch {
       alert("Sorry, the card couldn't be made. Please try again.");
     } finally {
