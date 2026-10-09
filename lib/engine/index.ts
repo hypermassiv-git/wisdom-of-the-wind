@@ -25,9 +25,9 @@ export function strategyId(c: Candidate): string {
   return `${c.type}:${c.legs.map((l) => `${l.role}-${l.symbol}@${l.marketId}`).join("|")}`;
 }
 
-export function evaluate(c: Candidate, config: EngineConfig): Strategy {
-  const earnings = positionEarnings(c.legs, config.rewardValuation);
-  const spread = spreadEarnings(c.legs, config.principalUsd, config.rewardValuation);
+export function evaluate(c: Candidate, config: EngineConfig, heldPriceUsd: Record<string, number> = {}): Strategy {
+  const earnings = positionEarnings(c.legs, config.rewardValuation, config.heldRewards);
+  const spread = spreadEarnings(c.legs, config.principalUsd, config.rewardValuation, config.heldRewards);
   const rewardDriven = isRewardDriven(earnings, spread);
   const { risk, reasons } = classifyRisk(c, rewardDriven);
   return {
@@ -41,6 +41,7 @@ export function evaluate(c: Candidate, config: EngineConfig): Strategy {
     riskReasons: reasons,
     riskFactors: riskFactors(c, earnings, spread, config, rewardDriven),
     text: renderText(c, earnings, spread, rewardDriven, config),
+    heldPriceUsd,
   };
 }
 
@@ -71,7 +72,7 @@ export function runEngineDetailed(snapshot: MarketSnapshot, config: EngineConfig
     return [candidate];
   });
   const strategies = priced
-    .map((c) => evaluate(c, config))
+    .map((c) => evaluate(c, config, { DUST: snapshot.dustPriceUsd }))
     // Borrowing strategies must pay for their own loan; plain deposits have nothing borrowed.
     .filter((s) => (s.type === "simpleDeposit" || s.spread.net > 0) && s.netApr >= config.minNetApr)
     .sort((a, b) => b.netApr - a.netApr)

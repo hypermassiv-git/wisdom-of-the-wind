@@ -59,16 +59,25 @@ export function legEarnings(
   return { interest, rewardsByToken };
 }
 
-export function positionEarnings(legs: Leg[], rewardValuation: Record<string, number>): Earnings {
+/** Position earnings. Tokens in `held` go to `heldByToken`, outside the total. */
+export function positionEarnings(
+  legs: Leg[],
+  rewardValuation: Record<string, number>,
+  held: string[] = [],
+): Earnings {
   let interest = 0;
   const rewardsByToken: Record<string, number> = {};
+  const heldByToken: Record<string, number> = {};
   for (const leg of legs) {
     const e = legEarnings(leg, rewardValuation);
     interest += e.interest;
-    for (const [t, v] of Object.entries(e.rewardsByToken)) rewardsByToken[t] = (rewardsByToken[t] ?? 0) + v;
+    for (const [t, v] of Object.entries(e.rewardsByToken)) {
+      const into = held.includes(t) ? heldByToken : rewardsByToken;
+      into[t] = (into[t] ?? 0) + v;
+    }
   }
   const rewards = Object.values(rewardsByToken).reduce((a, b) => a + b, 0);
-  return { interest, rewards, net: interest + rewards, rewardsByToken };
+  return { interest, rewards, net: interest + rewards, rewardsByToken, heldByToken };
 }
 
 /**
@@ -79,9 +88,15 @@ export function spreadEarnings(
   legs: Leg[],
   principal: number,
   rewardValuation: Record<string, number>,
+  held: string[] = [],
 ): Earnings {
   const spreadLegs = legs.map((l) =>
     l.role === "deposit" ? { ...l, amountUsd: Math.max(0, l.amountUsd - principal) } : l,
   );
-  return positionEarnings(spreadLegs, rewardValuation);
+  return positionEarnings(spreadLegs, rewardValuation, held);
+}
+
+/** Yearly amount of a held reward token (e.g. DUST), from its dollar-equivalent; 0 without a price. */
+export function heldTokens(usdValue: number, priceUsd: number | undefined): number {
+  return priceUsd ? usdValue / priceUsd : 0;
 }
