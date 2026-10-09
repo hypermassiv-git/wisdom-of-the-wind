@@ -6,7 +6,7 @@
 import { baseName, displayName } from "@/config/assets";
 import { iconStyle } from "@/components/TokenIcon";
 import { breakdown } from "@/lib/breakdown";
-import { formatDate, usd } from "@/lib/format";
+import { formatDate, tokenAmount, usd } from "@/lib/format";
 import { TYPE_LABEL } from "@/lib/strategyTypes";
 import type { Leg, RiskLevel, Strategy } from "@/lib/engine/types";
 import { SITE_URL } from "./share";
@@ -180,13 +180,14 @@ export async function renderShareCard(s: Strategy, principalUsd: number, fetched
   const legs = ["deposit", "borrow", "lend"]
     .map((role) => s.legs.find((l) => l.role === role))
     .filter((l): l is Leg => !!l);
-  const { earnedByToken, rewards, earned, positive } = breakdown(s);
-  const legendTokens: [string, string, string][] = [
-    ...earnedByToken.filter(([, v]) => v > 0).map(([t]): [string, string, string] => [t, "Interest", C.ink]),
-    ...rewards.filter(([, v]) => v > 0).map(([t]): [string, string, string] => [t, "Rewards", REWARD_COLOR[t] ?? C.reward]),
-  ];
+  const { earnedByToken, rewards, held, earned, positive } = breakdown(s);
+  // Legend groups: "Interest" once with its tokens, then each liquid reward token in its bar colour.
+  const legend: { label: string; color: string; tokens: string[] }[] = [
+    { label: "Interest", color: "rgba(255,255,255,0.85)", tokens: earnedByToken.filter(([, v]) => v > 0).map(([t]) => t) },
+    ...rewards.map(([t]) => ({ label: "Rewards", color: REWARD_COLOR[t] ?? C.reward, tokens: [t] })),
+  ].filter((g) => g.tokens.length);
   // A missing icon just leaves its coloured circle.
-  const srcs = new Set([...legs.map((l) => l.symbol), ...legendTokens.map(([t]) => t)].map((t) => iconStyle(t).src));
+  const srcs = new Set([...legs.map((l) => l.symbol), ...legend.flatMap((g) => g.tokens), ...held.map(([t]) => t)].map((t) => iconStyle(t).src));
   const icons = new Map<string, HTMLImageElement>();
   await Promise.all([...srcs].map((src) => loadImage(src).then((img) => icons.set(src, img), () => {})));
 
@@ -246,13 +247,20 @@ export async function renderShareCard(s: Strategy, principalUsd: number, fetched
   setFont(ctx, 600, 14, font.sans, 2.5);
   ctx.fillStyle = C.label;
   ctx.fillText(TYPE_LABEL[s.type].toUpperCase(), L, 162);
+  // Two-line names drop a size so the flow row keeps clear of the earnings below.
   setFont(ctx, 600, 40, font.sans, 0.5);
+  let nameLines = wrap(ctx, s.text.name, width, 1);
+  let lineH = 50;
+  if (nameLines[0].endsWith("…")) {
+    setFont(ctx, 600, 34, font.sans, 0.5);
+    nameLines = wrap(ctx, s.text.name, width, 2);
+    lineH = 42;
+  }
   ctx.fillStyle = C.ink;
-  const nameLines = wrap(ctx, s.text.name, width, 2);
-  nameLines.forEach((line, i) => ctx.fillText(line, L, 212 + i * 50));
+  nameLines.forEach((line, i) => ctx.fillText(line, L, 210 + i * lineH));
 
   // Flow: token pills joined by arrows.
-  const flowY = 212 + (nameLines.length - 1) * 50 + 34;
+  const flowY = 210 + (nameLines.length - 1) * lineH + 32;
   const pillH = 74;
   const cy = flowY + pillH / 2;
   const loop = s.type === "yieldLoop";
@@ -340,20 +348,60 @@ export async function renderShareCard(s: Strategy, principalUsd: number, fetched
   const ly = barY + 40;
   setFont(ctx, 500, 18, font.sans);
   ctx.textBaseline = "middle";
-  for (const [token, label, color] of legendTokens) {
+  for (const { label, color, tokens } of legend) {
     circle(ctx, lx + 5, ly, 5);
-    ctx.fillStyle = color === C.ink ? "rgba(255,255,255,0.85)" : color;
+    ctx.fillStyle = color;
     ctx.fill();
     ctx.fillStyle = C.muted;
     ctx.fillText(label, lx + 18, ly + 1);
     lx += 18 + ctx.measureText(label).width + 8;
-    drawIcon(ctx, icons, token, lx, ly - 10, 20);
-    lx += 26;
-    ctx.fillStyle = C.secondary;
-    const t = baseName(token);
-    ctx.fillText(t, lx, ly + 1);
-    lx += ctx.measureText(t).width + 28;
+    for (const token of tokens) {
+      drawIcon(ctx, icons, token, lx, ly - 10, 20);
+      lx += 26;
+      ctx.fillStyle = C.secondary;
+      const t = baseName(token);
+      ctx.fillText(t, lx, ly + 1);
+      lx += ctx.measureText(t).width + 12;
+    }
+    lx += 16;
   }
+
+  // DUST in tokens, apart from the dollars: your piece of Neverland, as below the Total in the app.
+  // Drawn right to left; it drops to its own line if the legend leaves no room.
+  const pieceLabel = "Your piece of Neverland";
+  const heldWidth = () => {
+    setFont(ctx, 500, 18, font.sans);
+    let w = ctx.measureText(pieceLabel).width;
+    for (const [token, n] of held) {
+      setFont(ctx, 700, 18, font.sans);
+      w += 8 + ctx.measureText(`+${tokenAmount(n)}`).width + 26 + 6;
+      setFont(ctx, 600, 18, font.sans);
+      w += ctx.measureText(token).width;
+    }
+    return w;
+  };
+  const hy = held.length && R - heldWidth() < lx ? ly + 30 : ly;
+  let rx = R;
+  ctx.textAlign = "right";
+  for (const [token, n] of [...held].reverse()) {
+    setFont(ctx, 600, 18, font.sans);
+    ctx.fillStyle = C.secondary;
+    ctx.fillText(token, rx, hy + 1);
+    rx -= ctx.measureText(token).width + 6;
+    drawIcon(ctx, icons, token, rx - 20, hy - 10, 20);
+    rx -= 26;
+    setFont(ctx, 700, 18, font.sans);
+    ctx.fillStyle = REWARD_COLOR[token] ?? C.reward;
+    const amount = `+${tokenAmount(n)}`;
+    ctx.fillText(amount, rx, hy + 1);
+    rx -= ctx.measureText(amount).width + 8;
+  }
+  if (held.length) {
+    setFont(ctx, 500, 18, font.sans);
+    ctx.fillStyle = C.muted;
+    ctx.fillText(pieceLabel, rx, hy + 1);
+  }
+  ctx.textAlign = "left";
 
   // Footer.
   const fy = P.y + P.h - 34;

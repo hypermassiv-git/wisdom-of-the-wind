@@ -1,6 +1,7 @@
 /** Text, links and file name for sharing a strategy on X. The card image itself is drawn in lib/shareCard.ts. */
 
-import { usd } from "@/lib/format";
+import { breakdown } from "@/lib/breakdown";
+import { tokenAmount, usd } from "@/lib/format";
 import { startAsset } from "@/lib/sortFilter";
 import type { Strategy } from "@/lib/engine/types";
 
@@ -17,9 +18,11 @@ export function shareFileName(s: Strategy): string {
   return `wisdom-of-the-wind-${slug || "strategy"}.png`;
 }
 
-/** The post text. The link is passed separately so X shows it once. */
+/** The post text. DUST is given in tokens, never dollars. The link is passed separately so X shows it once. */
 export function shareText(s: Strategy, principalUsd: number): string {
-  return `${s.text.name}: about ${usd(s.earnings.net)} a year on ${usd(principalUsd)} on Neverland.\n\nFound it with Wisdom of the Wind 🌬️`;
+  const held = breakdown(s).held.map(([token, n]) => `${tokenAmount(n)} ${token}`);
+  const piece = held.length ? `, plus ${held.join(" and ")}, my piece of Neverland` : "";
+  return `${s.text.name}: about ${usd(s.earnings.net)} a year on ${usd(principalUsd)} on Neverland${piece}.\n\nFound it with Wisdom of the Wind 🌬️`;
 }
 
 /** Opens the site on the strategies that start with the same token. */

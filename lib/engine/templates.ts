@@ -6,16 +6,16 @@ import { displayName, getAsset } from "@/config/assets";
 import type { EngineConfig } from "@/config/engine";
 import { formatDate, listJoin, pct, usd } from "@/lib/format";
 import { mainRiskText } from "./risks";
-import type { Candidate, Earnings, Leg, StrategyText, StrategyType } from "./types";
+import type { Candidate, Earnings, StrategyText, StrategyType } from "./types";
 
 interface Templates {
   name: string;
-  /** Used instead of name when DUST is what makes the strategy pay. */
+  /** Used instead of name when rewards (e.g. MON) are what make the strategy pay. */
   nameRewardDriven?: string;
   action: string;
   /** How the strategy makes money when interest alone pays. */
   whyNow: string;
-  /** How the strategy makes money when DUST (and other rewards) are the driver. */
+  /** How the strategy makes money when rewards are the driver. */
   whyNowRewardDriven: string;
 }
 
@@ -85,14 +85,6 @@ function lendAction(borrow: string, lend: string, lendMarket: string): string {
   return `${how} ${displayName(lend)} and deposit that in the ${lendMarket}`;
 }
 
-/** "4.7% in DUST" or "4.7% in DUST + 1.2% in MON" for one leg; "" if it earns no rewards. */
-export function legRewardText(leg: Leg, rewardValuation: Record<string, number>): string {
-  return leg.incentives
-    .filter((i) => i.apr > 0.00005)
-    .map((i) => `${pct(i.apr * (rewardValuation[i.token] ?? 1))} in ${i.token}`)
-    .join(" + ");
-}
-
 /** "PT-shMON isolated market" → "PT-shMON market"; "main pool" stays. */
 function shortMarket(name: string): string {
   return name.replace(" isolated", "");
@@ -113,7 +105,7 @@ export function templateVars(
     .filter(([, v]) => v > 0)
     .sort((a, b) => b[1] - a[1])
     .map(([t]) => t);
-  const rewardName = listJoin(tokens.length ? tokens : ["DUST"]);
+  const rewardName = listJoin(tokens);
   const maturity = c.vars.maturity ? formatDate(c.vars.maturity) : "maturity";
   const depositYield = deposit.baseRate + deposit.builtInRate;
   const builtIn = depositAsset?.builtInYield;

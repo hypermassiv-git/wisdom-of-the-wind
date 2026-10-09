@@ -1,4 +1,5 @@
 import { baseName, getAsset } from "@/config/assets";
+import { heldTokens } from "@/lib/engine/math";
 import type { Leg, Strategy } from "@/lib/engine/types";
 
 /** Yearly USD per token, in order of first appearance. Tokens shown under one name (WMON and MON) are merged. */
@@ -25,17 +26,19 @@ function earnedParts(l: Leg): [string, number][] {
 export interface Breakdown {
   /** Interest earned per token, sub-$1 rows hidden (at least one row). */
   earnedByToken: [string, number][];
-  /** Reward rows: MON first, other liquid tokens next, DUST always last (at least one row). */
+  /** Liquid reward rows in USD, MON first. */
   rewards: [string, number][];
   /** Loan interest paid per token. */
   paidByToken: [string, number][];
+  /** Held tokens (DUST) built up per year, as token amounts: your piece of Neverland, outside the total. */
+  held: [string, number][];
   /** Total interest earned. */
   earned: number;
-  /** Earned plus rewards: the full width of the bar. */
+  /** Earned plus liquid rewards: the full width of the bar. */
   positive: number;
 }
 
-/** Yearly earnings split into rows: earned + rewards − paid = total. */
+/** Yearly earnings split into rows: earned + rewards − paid = total, with held tokens listed apart. */
 export function breakdown(s: Strategy): Breakdown {
   const earnedAll = byToken(s.legs.filter((l) => l.role !== "borrow").flatMap(earnedParts));
   const earned = earnedAll.reduce((sum, [, v]) => sum + v, 0);
@@ -45,10 +48,13 @@ export function breakdown(s: Strategy): Breakdown {
   const paidByToken = byToken(
     s.legs.filter((l) => l.role === "borrow").map((l) => [l.symbol, l.amountUsd * l.baseRate]),
   ).filter(([, v]) => v > 0.5);
-  const rank = (t: string) => (t === "MON" ? 0 : t === "DUST" ? 2 : 1);
+  // One row per reward token: MON first, then other tokens.
   const rewards = Object.entries(s.earnings.rewardsByToken)
     .filter(([, v]) => v > 0.005)
-    .sort(([a], [b]) => rank(a) - rank(b));
-  if (!rewards.length) rewards.push(["DUST", 0]);
-  return { earnedByToken, rewards, paidByToken, earned, positive: earned + s.earnings.rewards };
+    .sort(([a], [b]) => (a === "MON" ? -1 : b === "MON" ? 1 : 0));
+  // DUST you build up, in tokens: it's your piece of Neverland, not spending money.
+  const held = Object.entries(s.earnings.heldByToken)
+    .map(([token, v]): [string, number] => [token, heldTokens(v, s.heldPriceUsd[token])])
+    .filter(([, n]) => n >= 0.5);
+  return { earnedByToken, rewards, paidByToken, held, earned, positive: earned + s.earnings.rewards };
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ENGINE_CONFIG } from "@/config/engine";
 import { mockSnapshot } from "@/lib/data/mock";
 import { runEngine } from "@/lib/engine";
+import { heldTokens } from "@/lib/engine/math";
 import { breakdown } from "@/lib/breakdown";
 import { shareFileName, shareLink, shareText, xIntentUrl } from "@/lib/share";
 import { startAsset } from "@/lib/sortFilter";
@@ -18,6 +19,15 @@ describe("share helpers", () => {
     const text = shareText(s, 1000);
     expect(text).toContain(s.text.name);
     expect(text).toContain("a year on $1,000");
+  });
+
+  it("gives DUST in tokens as your piece of Neverland, never in dollars", () => {
+    const withDust = all.find((s) => (s.earnings.heldByToken.DUST ?? 0) > 0)!;
+    const text = shareText(withDust, 1000);
+    expect(text).toMatch(/plus [\d,.]+ DUST, my piece of Neverland/);
+    expect(text).not.toMatch(/\$[\d,.]+ (in )?DUST/);
+    const noDust = all.find((s) => !s.earnings.heldByToken.DUST);
+    if (noDust) expect(shareText(noDust, 1000)).not.toContain("DUST");
   });
 
   it("links back to strategies for the same start token", () => {
@@ -37,15 +47,16 @@ describe("share helpers", () => {
 });
 
 describe("breakdown", () => {
-  it("adds up to the strategy's net earnings, with DUST last", () => {
+  it("adds up to net earnings, with DUST kept out and given in tokens", () => {
     for (const s of all) {
       const b = breakdown(s);
       const rewards = b.rewards.reduce((sum, [, v]) => sum + v, 0);
       const paid = s.legs.filter((l) => l.role === "borrow").reduce((sum, l) => sum + l.amountUsd * l.baseRate, 0);
       expect(b.earned + rewards - paid).toBeCloseTo(s.earnings.net, 6);
-      const dust = b.rewards.findIndex(([t]) => t === "DUST");
-      if (dust >= 0) expect(dust).toBe(b.rewards.length - 1);
-      if (b.rewards[0][0] !== "DUST" && b.rewards.some(([t]) => t === "MON")) expect(b.rewards[0][0]).toBe("MON");
+      expect(b.rewards.some(([t]) => t === "DUST")).toBe(false);
+      if (b.rewards.some(([t]) => t === "MON")) expect(b.rewards[0][0]).toBe("MON");
+      const dust = b.held.find(([t]) => t === "DUST");
+      if (dust) expect(dust[1]).toBeCloseTo(heldTokens(s.earnings.heldByToken.DUST, s.heldPriceUsd.DUST), 6);
     }
   });
 });

@@ -314,7 +314,7 @@ export function StrategyFinder() {
           </div>
           )}
 
-          <Glossary dustPriceUsd={data.dustPriceUsd} />
+          <Glossary />
 
           {strategies.length === 0 ? (
             <div className="panel mt-5 p-8 text-center text-ink-secondary">

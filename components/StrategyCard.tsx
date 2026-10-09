@@ -1,6 +1,7 @@
 import { displayName, getAsset } from "@/config/assets";
 import { ENGINE_CONFIG } from "@/config/engine";
-import { formatDate, listJoin, usd } from "@/lib/format";
+import { formatDate, listJoin, tokenAmount, usd } from "@/lib/format";
+import { heldTokens } from "@/lib/engine/math";
 import type { Leg, Strategy } from "@/lib/engine/types";
 import { Chevron } from "./Chevron";
 import { TYPE_LABEL } from "@/lib/strategyTypes";
@@ -10,18 +11,28 @@ import { RiskBadge } from "./RiskBadge";
 import { ShareButton } from "./ShareButton";
 
 
-/** Yearly rewards on `amount` in this leg, e.g. "about $18 in DUST rewards". */
-function rewardsOn(leg: Leg, amount: number): string {
+/**
+ * Yearly rewards on `amount` in this leg, e.g. "about $18 in MON rewards and about 430 DUST".
+ * Held tokens like DUST are given in tokens, never dollars.
+ */
+function rewardsOn(leg: Leg, amount: number, heldPriceUsd: Record<string, number>): string {
+  const { heldRewards, rewardValuation } = ENGINE_CONFIG;
   const tokens = leg.incentives.filter((i) => i.apr > 0.00005);
-  if (!tokens.length) return "";
-  const total = tokens.reduce((sum, i) => sum + i.apr * (ENGINE_CONFIG.rewardValuation[i.token] ?? 1), 0) * amount;
-  return `about ${usd(total)} in ${listJoin(tokens.map((i) => i.token))} rewards`;
+  const spent = tokens.filter((i) => !heldRewards.includes(i.token));
+  const parts: string[] = [];
+  const total = spent.reduce((sum, i) => sum + i.apr * (rewardValuation[i.token] ?? 1), 0) * amount;
+  if (total >= 0.5) parts.push(`about ${usd(total)} in ${listJoin(spent.map((i) => i.token))} rewards`);
+  for (const i of tokens.filter((i) => heldRewards.includes(i.token))) {
+    const n = heldTokens(i.apr * amount, heldPriceUsd[i.token]);
+    if (n >= 0.5) parts.push(`about ${tokenAmount(n)} ${i.token}`);
+  }
+  return listJoin(parts);
 }
 
-/** "That earns about $580 a year, plus about $90 in DUST rewards." for `amount` in this leg. */
-function earnsSentence(leg: Leg, amount: number): string {
+/** "That earns about $580 a year, plus about 430 DUST." for `amount` in this leg. */
+function earnsSentence(leg: Leg, amount: number, heldPriceUsd: Record<string, number>): string {
   const earn = (leg.baseRate + leg.builtInRate) * amount;
-  const rewards = rewardsOn(leg, amount);
+  const rewards = rewardsOn(leg, amount, heldPriceUsd);
   const main = earn >= 0.5 ? `That earns about ${usd(earn)} a year` : "";
   if (main && rewards) return `${main}, plus ${rewards}.`;
   if (main) return `${main}.`;
@@ -58,7 +69,7 @@ function steps(s: Strategy, principal: number): string[] {
   const lines: string[] = [];
   const get = getStep(deposit.symbol);
   if (get) lines.push(get);
-  lines.push(`Deposit your ${usd(principal)} of ${d} in the ${deposit.marketName}. ${earnsSentence(deposit, principal)}`);
+  lines.push(`Deposit your ${usd(principal)} of ${d} in the ${deposit.marketName}. ${earnsSentence(deposit, principal, s.heldPriceUsd)}`);
   if (!borrow) {
     const maturity = getAsset(deposit.symbol)?.builtInYield?.kind === "pt";
     lines.push(
@@ -69,9 +80,9 @@ function steps(s: Strategy, principal: number): string[] {
     return lines;
   }
   const b = displayName(borrow.symbol);
-  const borrowRewards = rewardsOn(borrow, borrow.amountUsd);
+  const borrowRewards = rewardsOn(borrow, borrow.amountUsd, s.heldPriceUsd);
   const costLine = `In total the loan costs about ${usd(borrow.baseRate * borrow.amountUsd)} a year in interest${
-    borrowRewards ? `, and Neverland pays you ${borrowRewards} for borrowing` : ""
+    borrowRewards ? `, and you collect ${borrowRewards} for borrowing` : ""
   }.`;
   if (s.type === "yieldLoop") {
     const fraction = borrow.amountUsd / deposit.amountUsd;
@@ -96,7 +107,7 @@ function steps(s: Strategy, principal: number): string[] {
       lend.symbol === borrow.symbol
         ? `Lend the ${b} in the ${lend.marketName}.`
         : `Swap the ${b} for ${l}${swapWhere(lend.symbol)} and deposit it in the ${lend.marketName}.`;
-    lines.push(`${move} ${earnsSentence(lend, lend.amountUsd)}`);
+    lines.push(`${move} ${earnsSentence(lend, lend.amountUsd, s.heldPriceUsd)}`);
   }
   lines.push(
     "Check your Health Factor in the Neverland app now and then. If it gets close to 1, repay some of the loan.",
@@ -121,8 +132,8 @@ function exitSteps(s: Strategy): string[] {
   const pt = s.legs.find((l) => l.role !== "borrow" && getAsset(l.symbol)?.builtInYield?.kind === "pt");
   const earnsMon = s.legs.some((l) => l.incentives.some((i) => i.token === "MON" && i.apr > 0));
   const claim = earnsMon
-    ? "Claim any DUST rewards in the Neverland app and MON rewards on merkl.xyz."
-    : "Claim any DUST rewards you've collected in the Neverland app.";
+    ? "Claim any MON rewards on merkl.xyz. Collect your DUST in the Neverland app and lock it for a weekly cut of Neverland's revenue."
+    : "Collect your DUST in the Neverland app and lock it for a weekly cut of Neverland's revenue.";
   const lines = [first, `Withdraw your ${d}.`, claim];
   if (pt) {
     lines.push(

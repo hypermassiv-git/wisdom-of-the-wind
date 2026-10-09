@@ -1,6 +1,6 @@
 import { baseName, displayName } from "@/config/assets";
 import { breakdown } from "@/lib/breakdown";
-import { formatDate, usd } from "@/lib/format";
+import { formatDate, tokenAmount, usd } from "@/lib/format";
 import { daysToMaturity } from "@/lib/sortFilter";
 import type { Strategy } from "@/lib/engine/types";
 import { TokenIcon } from "./TokenIcon";
@@ -11,7 +11,7 @@ const rewardColor = (token: string) => REWARD_COLOR[token] ?? "bg-reward";
 
 /** Yearly earnings on the chosen amount, as a simple sum: earned + rewards − paid = total. */
 export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalUsd: number }) {
-  const { earnedByToken, rewards, paidByToken, earned, positive } = breakdown(s);
+  const { earnedByToken, rewards, paidByToken, held, earned, positive } = breakdown(s);
   const earnedShare = positive > 0 ? (earned / positive) * 100 : 0;
 
   return (
@@ -68,6 +68,11 @@ export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalU
           <dt>Total</dt>
           <dd>{usd(s.earnings.net)}</dd>
         </div>
+        {held.map(([token, n], i) => (
+          <div key={token} className={i === 0 ? "border-t border-white/10 pt-1" : ""}>
+            <Row dot={rewardColor(token)} label="Your piece of Neverland" value={`+${tokenAmount(n)}`} token={token} reward />
+          </div>
+        ))}
       </dl>
     </div>
   );

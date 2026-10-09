@@ -8,11 +8,15 @@ export interface EngineConfig {
   /** Amount the card numbers are quoted for, in USD. */
   principalUsd: number;
   /**
-   * How much each reward token is worth relative to its market price.
-   * DUST is valued assuming the user locks it for the maximum period, so it counts at full
-   * market value (no early-claim haircut). MON incentives (paid via Merkl) count at full price.
+   * How much each reward token counted in dollars is worth relative to its market price.
+   * MON incentives (paid via Merkl) count at full price.
    */
   rewardValuation: Record<string, number>;
+  /**
+   * Reward tokens you build up and hold rather than spend: shown as token amounts, never in dollars,
+   * and left out of totals and ranking. DUST locks into veDUST for a cut of Neverland's revenue and a vote.
+   */
+  heldRewards: string[];
   /** Skip borrow markets with less spare cash than this (USD). */
   minLiquidityUsd: number;
   /** Maximum number of cards to show. */
@@ -23,7 +27,8 @@ export const ENGINE_CONFIG: EngineConfig = {
   minNetApr: 0.01,
   leverageFraction: 0.5,
   principalUsd: 1000,
-  rewardValuation: { DUST: 1.0, MON: 1.0 },
+  rewardValuation: { MON: 1.0 },
+  heldRewards: ["DUST"],
   minLiquidityUsd: 10_000,
   maxResults: 20,
 };
