@@ -60,3 +60,11 @@ export function shareText(s: Strategy): string {
 export function xIntentUrl(text: string): string {
   return `https://x.com/intent/post?${new URLSearchParams({ text })}`;
 }
+
+/**
+ * Opens the composer in the X app, where the user is signed in. Phones send x.com links to the browser instead,
+ * which asks them to sign in again.
+ */
+export function xAppUrl(text: string): string {
+  return `twitter://post?message=${encodeURIComponent(text)}`;
+}

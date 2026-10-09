@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Strategy } from "@/lib/engine/types";
-import { shareFileName, shareText, xIntentUrl } from "@/lib/share";
+import { shareFileName, shareText, xAppUrl, xIntentUrl } from "@/lib/share";
 import { renderShareCard } from "@/lib/shareCard";
 import { type ShareCardFile, ShareModal } from "./ShareModal";
 
@@ -33,7 +33,8 @@ export function ShareButton({ s, principalUsd, fetchedAt }: { s: Strategy; princ
     if (busy) return;
     setBusy(true);
     const fileName = shareFileName(s);
-    const intentUrl = xIntentUrl(shareText(s));
+    const text = shareText(s);
+    const intentUrl = xIntentUrl(text);
     const blob = renderShareCard(s, principalUsd, fetchedAt);
     const mobile = matchMedia("(pointer: coarse)").matches;
     const copied = mobile ? Promise.resolve(false) : copyImage(blob);
@@ -41,7 +42,14 @@ export function ShareButton({ s, principalUsd, fetchedAt }: { s: Strategy; princ
       const png = await blob;
       const url = URL.createObjectURL(png);
       if (mobile) {
-        setCard({ url, fileName, copied: false, intentUrl, file: new File([png], fileName, { type: "image/png" }) });
+        setCard({
+          url,
+          fileName,
+          copied: false,
+          intentUrl,
+          appUrl: xAppUrl(text),
+          file: new File([png], fileName, { type: "image/png" }),
+        });
         return;
       }
       const a = document.createElement("a");
