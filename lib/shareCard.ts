@@ -121,13 +121,13 @@ function wrap(ctx: Ctx, text: string, width: number, max: number): string[] {
 }
 
 /** A rounded chip with a tinted fill and ring, like the UI's badges. Returns its width. */
-function chip(ctx: Ctx, text: string, x: number, cy: number, color: string, font: string, dot = false, small = false) {
-  setFont(ctx, 600, small ? 15 : 18, font);
-  const pad = small ? 12 : 16;
-  const dotSpace = dot ? (small ? 13 : 16) : 0;
+function chip(ctx: Ctx, text: string, x: number, cy: number, color: string, font: string, dot = false, alignRight = false) {
+  setFont(ctx, 600, 18, font);
+  const pad = 16;
+  const dotSpace = dot ? 16 : 0;
   const w = ctx.measureText(text).width + pad * 2 + dotSpace;
-  const h = small ? 30 : 38;
-  const left = x;
+  const h = 38;
+  const left = alignRight ? x - w : x;
   roundRect(ctx, left, cy - h / 2, w, h, h / 2);
   ctx.globalAlpha = 0.12;
   ctx.fillStyle = color;
@@ -139,7 +139,7 @@ function chip(ctx: Ctx, text: string, x: number, cy: number, color: string, font
   ctx.globalAlpha = 1;
   ctx.fillStyle = color;
   if (dot) {
-    circle(ctx, left + pad + (small ? 3 : 4), cy, small ? 3 : 4);
+    circle(ctx, left + pad + 4, cy, 4);
     ctx.fill();
   }
   ctx.textBaseline = "middle";
@@ -232,7 +232,7 @@ export async function renderShareCard(s: Strategy, principalUsd: number, fetched
   const width = R - L;
   ctx.textAlign = "left";
 
-  // Brand.
+  // Brand and risk.
   ctx.textBaseline = "middle";
   setFont(ctx, 400, 24, font.display, 1.5);
   const brand = ctx.createLinearGradient(0, 80, 0, 110);
@@ -240,16 +240,13 @@ export async function renderShareCard(s: Strategy, principalUsd: number, fetched
   brand.addColorStop(1, C.lavender);
   ctx.fillStyle = brand;
   ctx.fillText("Wisdom of the Wind", L, 98);
+  chip(ctx, `${s.risk} risk`, R, 98, RISK[s.risk], font.sans, true, true);
 
   // Type and name.
   ctx.textBaseline = "alphabetic";
   setFont(ctx, 600, 14, font.sans, 2.5);
   ctx.fillStyle = C.label;
-  const typeText = TYPE_LABEL[s.type].toUpperCase();
-  ctx.fillText(typeText, L, 162);
-  // Risk sits right after the type, as one line describing the strategy.
-  chip(ctx, `${s.risk} risk`, L + ctx.measureText(typeText).width + 14, 157, RISK[s.risk], font.sans, true, true);
-  ctx.textBaseline = "alphabetic";
+  ctx.fillText(TYPE_LABEL[s.type].toUpperCase(), L, 162);
   // Two-line names drop a size so the flow row keeps clear of the earnings below.
   setFont(ctx, 600, 40, font.sans, 0.5);
   let nameLines = wrap(ctx, s.text.name, width, 1);
