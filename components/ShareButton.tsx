@@ -18,8 +18,8 @@ function copyImage(blob: Promise<Blob>): Promise<boolean> {
 }
 
 /**
- * "Share on X": draws the strategy as an image. Phones that can share files open the share sheet with it;
- * everywhere else it downloads (and copies) the image and opens a step-by-step guide to attach it to a post.
+ * "Share on X": draws the strategy as an image and opens a step-by-step guide to attach it to a post.
+ * On computers the image downloads (and is copied) straight away; on phones the guide's first step saves it.
  */
 export function ShareButton({ s, principalUsd, fetchedAt }: { s: Strategy; principalUsd: number; fetchedAt?: string }) {
   const [busy, setBusy] = useState(false);
@@ -33,30 +33,22 @@ export function ShareButton({ s, principalUsd, fetchedAt }: { s: Strategy; princ
     if (busy) return;
     setBusy(true);
     const fileName = shareFileName(s);
-    const text = shareText(s);
+    const intentUrl = xIntentUrl(shareText(s));
     const blob = renderShareCard(s, principalUsd, fetchedAt);
-    const touch = matchMedia("(pointer: coarse)").matches && typeof navigator.canShare === "function";
-    const copied = touch ? Promise.resolve(false) : copyImage(blob);
+    const mobile = matchMedia("(pointer: coarse)").matches;
+    const copied = mobile ? Promise.resolve(false) : copyImage(blob);
     try {
       const png = await blob;
-      if (touch) {
-        const file = new File([png], fileName, { type: "image/png" });
-        if (navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], text });
-            return;
-          } catch (e) {
-            if (e instanceof DOMException && e.name === "AbortError") return;
-            // Otherwise (e.g. the tap no longer counts as recent), fall back to the download guide.
-          }
-        }
-      }
       const url = URL.createObjectURL(png);
+      if (mobile) {
+        setCard({ url, fileName, copied: false, intentUrl, file: new File([png], fileName, { type: "image/png" }) });
+        return;
+      }
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
       a.click();
-      setCard({ url, fileName, copied: await copied, intentUrl: xIntentUrl(text) });
+      setCard({ url, fileName, copied: await copied, intentUrl });
     } catch {
       alert("Sorry, the card couldn't be made. Please try again.");
     } finally {
