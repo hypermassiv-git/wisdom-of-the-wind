@@ -99,7 +99,7 @@ function Row({
         <span className={`size-2 rounded-full ${dot ?? "bg-transparent"}`} aria-hidden />
         {label}
       </dt>
-      <dd className={`flex items-center gap-1 font-semibold whitespace-nowrap ${cost ? "text-high" : ""}`}>
+      <dd className={`flex shrink-0 items-center gap-1 font-semibold whitespace-nowrap ${cost ? "text-high" : ""}`}>
         {value}
         <span className="ml-0.5 flex items-center gap-1 text-xs font-semibold text-ink-muted">
           <TokenIcon symbol={token} size={14} />
