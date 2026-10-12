@@ -311,14 +311,14 @@ export async function renderShareCard(s: Strategy, principalUsd: number, fetched
   const hero = usd(s.earnings.net);
   ctx.fillText(hero, L, heroY);
   const heroW = ctx.measureText(hero).width;
-  setFont(ctx, 500, 26, font.sans);
+  setFont(ctx, 600, 26, font.sans);
   ctx.fillStyle = C.muted;
   ctx.fillText(`a year on ${usd(principalUsd)}`, L + heroW + 16, heroY);
   setFont(ctx, 600, 30, font.sans);
   ctx.fillStyle = C.secondary;
   ctx.textAlign = "right";
   ctx.fillText(`${((s.earnings.net / principalUsd) * 100).toFixed(1)}%`, R, heroY - 22);
-  setFont(ctx, 500, 18, font.sans);
+  setFont(ctx, 600, 18, font.sans);
   ctx.fillStyle = C.muted;
   ctx.fillText("a year", R, heroY);
   ctx.textAlign = "left";
@@ -346,7 +346,7 @@ export async function renderShareCard(s: Strategy, principalUsd: number, fetched
   // Legend: which token each part is paid in.
   let lx = L;
   const ly = barY + 40;
-  setFont(ctx, 500, 18, font.sans);
+  setFont(ctx, 600, 18, font.sans);
   ctx.textBaseline = "middle";
   for (const { label, color, tokens } of legend) {
     circle(ctx, lx + 5, ly, 5);
@@ -370,7 +370,7 @@ export async function renderShareCard(s: Strategy, principalUsd: number, fetched
   // Drawn right to left; it drops to its own line if the legend leaves no room.
   const pieceLabel = "Your piece of Neverland";
   const heldWidth = () => {
-    setFont(ctx, 500, 18, font.sans);
+    setFont(ctx, 600, 18, font.sans);
     let w = ctx.measureText(pieceLabel).width;
     for (const [token, n] of held) {
       setFont(ctx, 700, 18, font.sans);
@@ -397,7 +397,7 @@ export async function renderShareCard(s: Strategy, principalUsd: number, fetched
     rx -= ctx.measureText(amount).width + 8;
   }
   if (held.length) {
-    setFont(ctx, 500, 18, font.sans);
+    setFont(ctx, 600, 18, font.sans);
     ctx.fillStyle = C.muted;
     ctx.fillText(pieceLabel, rx, hy + 1);
   }
@@ -405,7 +405,7 @@ export async function renderShareCard(s: Strategy, principalUsd: number, fetched
 
   // Footer.
   const fy = P.y + P.h - 34;
-  setFont(ctx, 500, 16, font.sans);
+  setFont(ctx, 600, 16, font.sans);
   ctx.fillStyle = C.muted;
   ctx.fillText(`Live rates · ${formatDate(fetchedAt ?? new Date().toISOString())} · Not financial advice`, L, fy);
   ctx.textAlign = "right";

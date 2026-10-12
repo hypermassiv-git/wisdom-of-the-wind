@@ -24,6 +24,7 @@ The app has only a dark theme: deep purple gradients, frosted cards, soft violet
 - **Quicksand** (Google Fonts) for all interface text. Body text is 16/24, card titles are 17–18px at weight 600, and numbers use tabular figures.
 - **Cinzel** for the page title only, with 0.06em letter-spacing.
 - **Section labels:** 11px, weight 600, uppercase, 0.18em letter-spacing.
+- **Minimum weight:** 600. Applies to everything below the hero; the title, tagline and "Made with love" line keep their original weights.
 
 ## Shape and depth
 - **Corner radii:** cards 28px, inner panels 16px, chips 8px, buttons fully round.

@@ -36,7 +36,7 @@ function Pill({ leg, heldPriceUsd }: { leg: Leg; heldPriceUsd: Record<string, nu
   const rate = paying ? leg.baseRate : leg.baseRate + leg.builtInRate;
   return (
     <div className="min-w-0 rounded-2xl bg-white/[0.04] px-3 py-2 ring-1 ring-white/10">
-      <div className="text-[11px] font-medium uppercase tracking-wide text-ink-muted">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
         {ROLE[leg.role]} · {shortMarket(leg.marketName)}
       </div>
       <div className="mt-1 flex items-center gap-1.5 font-semibold">

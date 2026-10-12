@@ -5,7 +5,7 @@ import type { AssetFilter, HeldAsset } from "@/lib/sortFilter";
 import { TokenIcon } from "./TokenIcon";
 
 const chip = (on: boolean) =>
-  `flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-medium whitespace-nowrap transition-colors ${
+  `flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold whitespace-nowrap transition-colors ${
     on ? "bg-white/10 text-ink ring-1 ring-white/30" : "text-ink-muted ring-1 ring-white/10 hover:text-ink"
   }`;
 
@@ -31,7 +31,7 @@ export function AssetPicker({
 
   return (
     <div className="panel p-5 sm:p-6">
-      <p className="label">What do you have?</p>
+      <h2 className="text-lg font-semibold text-ink">What do you have?</h2>
       <div
         ref={row}
         role="group"
