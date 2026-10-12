@@ -13,21 +13,29 @@ describe("share helpers", () => {
     for (const s of all) expect(shareFileName(s)).toMatch(/^wisdom-of-the-wind-[a-z0-9]+(-[a-z0-9]+)*\.png$/);
   });
 
-  it("describes every strategy type in a neutral voice, with no numbers or links, ending on Neverland", () => {
+  // One pick per voice: shareText chooses with Math.floor(pick * 3).
+  const picks = [0, 0.4, 0.8];
+
+  it("writes every strategy type in each voice, tagging Neverland, with no numbers, links, emojis or first person", () => {
     const types = new Set(all.map((s) => s.type));
     expect(types.size).toBe(5);
     for (const s of all) {
-      const text = shareText(s);
-      expect(text).toMatch(/\n\nPossible on @Neverland_Money$/);
-      // Token names can hold a digit (USDT0), so ban amounts rather than every digit.
-      expect(text).not.toMatch(/[$%]|\d{2,}|https?:|Wisdom of the Wind|undefined|\b(I|my|me)\b/);
+      const texts = picks.map((p) => shareText(s, p));
+      expect(new Set(texts).size).toBe(3);
+      for (const text of texts) {
+        expect(text).toContain("@Neverland_Money");
+        // Token names can hold a digit (USDT0), so ban amounts rather than every digit.
+        expect(text).not.toMatch(/[$%]|\d{2,}|https?:|Wisdom of the Wind|undefined|\b(I|my|me)\b|\p{Extended_Pictographic}/u);
+      }
     }
   });
 
-  it("mentions DUST, without an amount, only when the strategy builds it", () => {
+  it("adds the DUST bonus line, without an amount, only when the strategy builds it", () => {
     for (const s of all) {
       const builds = breakdown(s).held.length > 0;
-      expect(shareText(s).includes("Builds DUST along the way")).toBe(builds);
+      for (const p of picks) {
+        expect(shareText(s, p).endsWith("\n\nBonus: it earns DUST too, which can be locked for a weekly cut of Neverland's revenue.")).toBe(builds);
+      }
     }
   });
 

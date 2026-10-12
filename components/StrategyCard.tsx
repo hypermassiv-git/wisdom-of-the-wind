@@ -197,14 +197,14 @@ export function StrategyCard({
           <Chevron />
         </summary>
 
-        <div className="space-y-4 pt-2 leading-relaxed text-ink-secondary">
+        <div className="space-y-5 pt-2 leading-relaxed text-ink-muted">
           <section>
             <h3 className="text-base font-semibold text-ink">Why it works</h3>
-            <p className="mt-1">{s.text.whyNow}</p>
+            <p className="mt-2">{s.text.whyNow}</p>
           </section>
-          <section>
+          <section className="border-t border-white/10 pt-5">
             <h3 className="text-base font-semibold text-ink">Main risk</h3>
-            <p className="mt-1">{s.text.mainRisk}</p>
+            <p className="mt-2">{s.text.mainRisk}</p>
             <p className="mt-2 text-xs text-ink-muted">
               <span className="font-semibold">Why {s.risk.toLowerCase()} risk:</span> {s.riskReasons.join(". ")}.
             </p>
@@ -214,24 +214,24 @@ export function StrategyCard({
               </p>
             )}
           </section>
-          <section>
+          <section className="border-t border-white/10 pt-5">
             <h3 className="text-base font-semibold text-ink">Step by step</h3>
             <ol className="mt-2 space-y-2">
               {steps(s, principalUsd).map((line, i) => (
                 <li key={i} className="flex gap-2">
-                  <span className="text-ink-muted tabular-nums">{i + 1}.</span>
+                  <span className="tabular-nums">{i + 1}.</span>
                   <span>{line}</span>
                 </li>
               ))}
             </ol>
           </section>
           {exitSteps(s).length > 0 && (
-            <section>
+            <section className="border-t border-white/10 pt-5">
               <h3 className="text-base font-semibold text-ink">How to get out</h3>
               <ol className="mt-2 space-y-2">
                 {exitSteps(s).map((line, i) => (
                   <li key={i} className="flex gap-2">
-                    <span className="text-ink-muted tabular-nums">{i + 1}.</span>
+                    <span className="tabular-nums">{i + 1}.</span>
                     <span>{line}</span>
                   </li>
                 ))}

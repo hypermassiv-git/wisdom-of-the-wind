@@ -1,7 +1,7 @@
 /** Post text, X link and file name for sharing a strategy on X. The card image itself is drawn in lib/shareCard.ts. */
 
 import { breakdown } from "@/lib/breakdown";
-import { displayName } from "@/config/assets";
+import { displayName, getAsset } from "@/config/assets";
 import type { Strategy } from "@/lib/engine/types";
 
 export const SITE_URL = "https://wisdom-of-the-wind.vercel.app";
@@ -23,37 +23,87 @@ export const NEVERLAND_X = "@Neverland_Money";
 /** "PT-AUSD isolated market" → "PT-AUSD market"; "main pool" stays. */
 const market = (name: string) => name.replace(" isolated", "");
 
-/** What the strategy does, in plain words. No numbers: the card shows those. */
-function describe(s: Strategy): string {
+/** The coins and markets a post names, in display form. */
+function names(s: Strategy) {
   const deposit = s.legs.find((l) => l.role === "deposit")!;
   const borrow = s.legs.find((l) => l.role === "borrow");
   const lend = s.legs.find((l) => l.role === "lend");
-  const d = displayName(deposit.symbol);
-  const b = borrow ? displayName(borrow.symbol) : "";
   const l = lend ? displayName(lend.symbol) : "";
-  // "earn with earnAUSD", or "lend it in the PT-AUSD market" when the borrowed coin is lent as is.
-  const earn = lend && borrow && lend.symbol === borrow.symbol ? `lend it in the ${market(lend.marketName)}` : `earn with ${l}`;
-  switch (s.type) {
-    case "simpleDeposit":
-      return `A simple one: deposit ${d} in the ${market(deposit.marketName)} and let it earn. No loan and no looping.`;
-    case "yieldLoop":
-      return `Looping ${d}: deposit it, borrow ${b} against it, turn that into more ${d} and deposit again. The same position, earning on more than was put in.`;
-    case "marketGap":
-      return `Same coin, two rates. Borrow ${b} in the ${market(borrow!.marketName)} and lend it in the ${market(lend!.marketName)}, where it pays more.`;
-    case "stableCarry":
-      return `Stablecoins from start to finish: borrow ${b} against ${d}, then ${earn}.`;
-    case "collateralCarry":
-      return `Holding ${d} and still putting it to work: borrow ${b} against it and ${earn}.`;
-  }
+  return {
+    d: displayName(deposit.symbol),
+    b: borrow ? displayName(borrow.symbol) : "",
+    // "earn with earnAUSD", or "lend it in the PT-AUSD market" when the borrowed coin is lent as is.
+    earn: lend && borrow && lend.symbol === borrow.symbol ? `lend it in the ${market(lend.marketName)}` : `earn with ${l}`,
+    stable: getAsset(deposit.symbol)?.family === "USD",
+  };
 }
 
+const N = NEVERLAND_X;
+
 /**
- * The post text: a neutral description of the strategy and a nudge to Neverland. No numbers (the card has them)
- * and no links, since X shows posts with links to fewer people.
+ * Three voices for the post, picked at random per share so posts don't all look the same. Written about the strategy,
+ * never as if the person sharing is in it. No numbers (the card has them) and no emojis.
  */
-export function shareText(s: Strategy): string {
-  const dust = breakdown(s).held.length ? "\n\nBuilds DUST along the way, a piece of Neverland." : "";
-  return `${describe(s)}${dust}\n\nPossible on ${NEVERLAND_X}`;
+const VOICES: ((s: Strategy) => string)[] = [
+  // Found-it
+  (s) => {
+    const { d, b, earn } = names(s);
+    switch (s.type) {
+      case "yieldLoop":
+        return `Found a way to put ${d} to work on ${N}. Deposit it, borrow ${b}, turn that into more ${d}, repeat. Numbers on the card.`;
+      case "simpleDeposit":
+        return `Found a no-fuss spot for ${d} on ${N}. Just deposit and let it earn, no loan, no looping.`;
+      case "marketGap":
+        return `Found the same coin paying two different rates on ${N}. Borrow ${b} where it's cheap, lend it where it pays more.`;
+      case "stableCarry":
+        return `Found a stablecoin-only play on ${N}: borrow ${b} against ${d}, then ${earn}. Dollars start to finish.`;
+      case "collateralCarry":
+        return `Found a way to keep holding ${d} and still put it to work on ${N}: borrow ${b} against it, then ${earn}.`;
+    }
+  },
+  // Short and punchy
+  (s) => {
+    const { d } = names(s);
+    switch (s.type) {
+      case "yieldLoop":
+        return `Not bad for some ${d}. Looped on ${N}`;
+      case "simpleDeposit":
+        return `${d}, just sitting there earning. ${N}`;
+      case "marketGap":
+        return `Borrow cheap, lend higher, same coin. ${N}`;
+      case "stableCarry":
+        return `Stables in, stables out, still earning. ${N}`;
+      case "collateralCarry":
+        return `Keep the ${d}, let it earn anyway. ${N}`;
+    }
+  },
+  // Question hook
+  (s) => {
+    const { d, b, earn, stable } = names(s);
+    switch (s.type) {
+      case "yieldLoop":
+        return `Anyone looping ${d} on ${N}? Borrow ${b}, turn it into more ${d}, deposit again. Ran the numbers.`;
+      case "simpleDeposit":
+        return stable
+          ? `Where are people parking stablecoins right now? This is what plain ${d} gets on ${N}.`
+          : `Got ${d} sitting idle? This is what it earns just deposited on ${N}.`;
+      case "marketGap":
+        return `Why is ${b} cheaper to borrow in one market than it pays in another? Spotted this on ${N}.`;
+      case "stableCarry":
+        return `Who says stablecoins have to sit idle? Borrow ${b} against ${d} on ${N}, then ${earn}.`;
+      case "collateralCarry":
+        return `Holding ${d} and not doing anything with it? Borrow ${b} against it on ${N} and ${earn}.`;
+    }
+  },
+];
+
+/** The post text, in one of the voices above, plus a line about DUST when the strategy earns it. No links, since X shows posts with links to fewer people. */
+export function shareText(s: Strategy, pick = Math.random()): string {
+  const voice = VOICES[Math.floor(pick * VOICES.length)];
+  const dust = breakdown(s).held.length
+    ? "\n\nBonus: it earns DUST too, which can be locked for a weekly cut of Neverland's revenue."
+    : "";
+  return `${voice(s)}${dust}`;
 }
 
 /** X's post composer with the text filled in. */

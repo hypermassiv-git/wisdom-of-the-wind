@@ -18,7 +18,7 @@ export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalU
     <div className="rounded-chip bg-white/[0.02] p-4 ring-1 ring-white/5">
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <div className="text-lg font-semibold text-ink">You could earn</div>
+          <div className="text-sm text-ink-muted">You could earn</div>
           <div className="mt-1 text-3xl font-semibold tabular-nums">
             {usd(s.earnings.net)}
             <span className="ml-1.5 text-sm font-semibold text-ink-muted">a year on {usd(principalUsd)}</span>
@@ -59,10 +59,10 @@ export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalU
           <Row key={token} dot="bg-ink/85" label="Interest you earn" value={usd(value)} token={token} />
         ))}
         {rewards.map(([token, value]) => (
-          <Row key={token} dot={rewardColor(token)} label="Rewards" value={usd(value)} token={token} reward />
+          <Row key={token} dot={rewardColor(token)} label="Rewards" value={usd(value)} token={token} />
         ))}
         {paidByToken.map(([token, value]) => (
-          <Row key={token} label="Interest you pay on the loan" value={`−${usd(value)}`} token={token} muted />
+          <Row key={token} label="Interest you pay on the loan" value={`−${usd(value)}`} token={token} cost />
         ))}
         <div className="flex justify-between border-t border-white/10 pt-1 font-semibold">
           <dt>Total</dt>
@@ -70,7 +70,7 @@ export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalU
         </div>
         {held.map(([token, n], i) => (
           <div key={token} className={i === 0 ? "border-t border-white/10 pt-1" : ""}>
-            <Row dot={rewardColor(token)} label="Your piece of Neverland" value={`+${tokenAmount(n)}`} token={token} reward />
+            <Row dot={rewardColor(token)} label="Your piece of Neverland" value={`+${tokenAmount(n)}`} token={token} />
           </div>
         ))}
       </dl>
@@ -83,16 +83,15 @@ function Row({
   label,
   value,
   token,
-  muted,
-  reward,
+  cost,
 }: {
   dot?: string;
   label: string;
   value: string;
   /** Token the amount is paid in, shown after the dollar value: "$40 ◉ MON". */
   token: string;
-  muted?: boolean;
-  reward?: boolean;
+  /** Money you pay, shown in red. */
+  cost?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -100,9 +99,7 @@ function Row({
         <span className={`size-2 rounded-full ${dot ?? "bg-transparent"}`} aria-hidden />
         {label}
       </dt>
-      <dd
-        className={`flex shrink-0 items-center gap-1 whitespace-nowrap ${reward ? "font-semibold text-reward" : muted ? "text-ink-muted" : "font-semibold"}`}
-      >
+      <dd className={`flex shrink-0 items-center gap-1 font-semibold whitespace-nowrap ${cost ? "text-high" : ""}`}>
         {value}
         <span className="ml-0.5 flex items-center gap-1 text-xs font-semibold text-ink-muted">
           <TokenIcon symbol={token} size={14} />

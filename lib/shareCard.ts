@@ -302,10 +302,10 @@ export async function renderShareCard(s: Strategy, principalUsd: number, fetched
 
   // Hero: yearly dollars on the user's amount.
   const heroY = 470;
-  setFont(ctx, 600, 22, font.sans);
-  ctx.fillStyle = C.ink;
+  setFont(ctx, 600, 20, font.sans);
+  ctx.fillStyle = C.muted;
   ctx.textBaseline = "alphabetic";
-  ctx.fillText("You could earn", L, heroY - 76);
+  ctx.fillText("You could earn", L, heroY - 74);
   setFont(ctx, 700, 80, font.sans);
   ctx.fillStyle = C.ink;
   const hero = usd(s.earnings.net);
