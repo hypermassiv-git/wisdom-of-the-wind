@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect } from "react";
 import type { AssetFilter, HeldAsset } from "@/lib/sortFilter";
 import { TokenIcon } from "./TokenIcon";
-import { scrollFade } from "./scrollFade";
+import { useScrollFade } from "./useScrollFade";
 
 const chip = (on: boolean) =>
   `flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold whitespace-nowrap transition-colors ${
@@ -22,26 +22,23 @@ export function AssetPicker({
 }) {
   // Everyday tokens first, then ones that earn on their own (staked MON, PTs, yield stablecoins).
   const shown = [...assets.filter((a) => a.plain), ...assets.filter((a) => !a.plain)];
-  const row = useRef<HTMLDivElement>(null);
-  const rowRef = useCallback((el: HTMLDivElement | null) => {
-    row.current = el;
-    return scrollFade(el);
-  }, []);
+  const { ref: row, props: fade } = useScrollFade<HTMLDivElement>();
 
   // On phones the row scrolls sideways; keep the picked token in view, clear of the edge fade.
   useEffect(() => {
     const el = row.current?.querySelector<HTMLElement>('[aria-pressed="true"]');
-    if (el && row.current) row.current.scrollLeft = el.offsetLeft - row.current.offsetLeft - 48;
-  }, [value]);
+    if (el && row.current) row.current.scrollLeft = el.offsetLeft - row.current.offsetLeft - 56;
+  }, [value, row]);
 
   return (
     <div className="panel p-5 sm:p-6">
       <h2 className="text-lg font-semibold text-ink">What do you have?</h2>
       <div
-        ref={rowRef}
+        {...fade}
         role="group"
         aria-label="Filter by the token you have"
-        className="scroll-fade -mx-5 mt-1.5 flex scroll-px-12 gap-2 overflow-x-auto px-5 py-1.5 sm:mt-3 sm:pt-0 sm:pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+        // Vertical padding leaves room for the focus outline, which the scroll container would clip.
+        className="scroll-fade -mx-5 mt-1.5 flex scroll-px-14 gap-2 overflow-x-auto px-5 py-1.5 [scrollbar-width:none] sm:mx-0 sm:mt-3 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pt-0 sm:pb-1"
       >
         <button onClick={() => onChange("all")} aria-pressed={value === "all"} className={chip(value === "all")}>
           All tokens

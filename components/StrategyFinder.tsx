@@ -18,8 +18,8 @@ import { TYPE_FILTERS } from "@/lib/strategyTypes";
 import { AssetPicker } from "./AssetPicker";
 import { Glossary } from "./Glossary";
 import { HowItWorks } from "./HowItWorks";
-import { scrollFade } from "./scrollFade";
 import { StrategyCard } from "./StrategyCard";
+import { useScrollFade } from "./useScrollFade";
 
 type State =
   | { status: "idle" }
@@ -59,6 +59,7 @@ export function StrategyFinder() {
   const [asset, setAssetState] = useState<AssetFilter>("all");
   const [showAll, setShowAll] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const { props: typeRow } = useScrollFade<HTMLDivElement>();
 
   // Scroll to and briefly highlight a card (used by the starter pick).
   useEffect(() => {
@@ -300,10 +301,11 @@ export function StrategyFinder() {
 
           {!picked && (
           <div
-            ref={scrollFade}
+            {...typeRow}
             role="group"
             aria-label="Filter by strategy type"
-            className="scroll-fade -mx-4 mt-1.5 flex scroll-px-12 gap-2 overflow-x-auto px-4 py-1.5 sm:mt-3 sm:pt-0 sm:pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+            // Vertical padding leaves room for the focus outline, which the scroll container would clip.
+            className="scroll-fade -mx-4 mt-1.5 flex scroll-px-14 gap-2 overflow-x-auto px-4 py-1.5 [scrollbar-width:none] sm:mx-0 sm:mt-3 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pt-0 sm:pb-1"
           >
             {([["all", "All types"], ...TYPE_FILTERS] as [TypeFilter, string][])
               .filter(([key]) => key === "all" || counts[key])

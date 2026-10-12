@@ -156,6 +156,17 @@ body::before {
     color: var(--color-label);
   }
 
+  /* A sideways-scrolling row fades out on whichever side has more to scroll to (set by the component). */
+  .scroll-fade {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--fade-l, 0px),
+      #000 calc(100% - var(--fade-r, 0px)),
+      transparent
+    );
+  }
+
   .skeleton {
     background-image: linear-gradient(
       90deg,
@@ -218,29 +229,4 @@ body::before {
   .mote { animation: mote var(--dur, 14s) ease-in-out var(--d, 0s) infinite; }
   .glow-pulse { animation: pulse-glow 4s ease-in-out infinite; }
   .heartbeat { animation: heartbeat 1.8s ease-in-out infinite; }
-}
-
-/*
- * Sideways-scrolling chip rows on phones: fade whichever edge has more to scroll,
- * so it's clear the row keeps going. `useScrollFade` sets the data attributes.
- */
-@media (width < 40rem) {
-  .scroll-fade {
-    --fade: 2.5rem;
-    --fade-start: 0px;
-    --fade-end: 0px;
-    mask-image: linear-gradient(
-      to right,
-      transparent,
-      #000 var(--fade-start),
-      #000 calc(100% - var(--fade-end)),
-      transparent
-    );
-  }
-  .scroll-fade[data-fade-start] {
-    --fade-start: var(--fade);
-  }
-  .scroll-fade[data-fade-end] {
-    --fade-end: var(--fade);
-  }
 }
