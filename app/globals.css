@@ -219,3 +219,28 @@ body::before {
   .glow-pulse { animation: pulse-glow 4s ease-in-out infinite; }
   .heartbeat { animation: heartbeat 1.8s ease-in-out infinite; }
 }
+
+/*
+ * Sideways-scrolling chip rows on phones: fade whichever edge has more to scroll,
+ * so it's clear the row keeps going. `useScrollFade` sets the data attributes.
+ */
+@media (width < 40rem) {
+  .scroll-fade {
+    --fade: 2.5rem;
+    --fade-start: 0px;
+    --fade-end: 0px;
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--fade-start),
+      #000 calc(100% - var(--fade-end)),
+      transparent
+    );
+  }
+  .scroll-fade[data-fade-start] {
+    --fade-start: var(--fade);
+  }
+  .scroll-fade[data-fade-end] {
+    --fade-end: var(--fade);
+  }
+}
