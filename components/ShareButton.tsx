@@ -18,8 +18,8 @@ function copyImage(blob: Promise<Blob>): Promise<boolean> {
 }
 
 /**
- * "Share on X": draws the strategy as an image and opens a step-by-step guide to attach it to a post.
- * On computers the image downloads (and is copied) straight away; on phones the guide's first step saves it.
+ * "Share on X": draws the strategy as an image, copies it, and opens a step-by-step guide to paste it into a post.
+ * If the copy doesn't work in this browser, the guide's first step lets the user copy (or save) it by hand.
  */
 export function ShareButton({ s, principalUsd, fetchedAt }: { s: Strategy; principalUsd: number; fetchedAt?: string }) {
   const [busy, setBusy] = useState(false);
@@ -32,31 +32,21 @@ export function ShareButton({ s, principalUsd, fetchedAt }: { s: Strategy; princ
   async function share() {
     if (busy) return;
     setBusy(true);
-    const fileName = shareFileName(s);
     const text = shareText(s);
-    const intentUrl = xIntentUrl(text);
     const blob = renderShareCard(s, principalUsd, fetchedAt);
     const mobile = matchMedia("(pointer: coarse)").matches;
-    const copied = mobile ? Promise.resolve(false) : copyImage(blob);
+    const copied = copyImage(blob);
     try {
       const png = await blob;
-      const url = URL.createObjectURL(png);
-      if (mobile) {
-        setCard({
-          url,
-          fileName,
-          copied: false,
-          intentUrl,
-          appUrl: xAppUrl(text),
-          file: new File([png], fileName, { type: "image/png" }),
-        });
-        return;
-      }
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      setCard({ url, fileName, copied: await copied, intentUrl });
+      setCard({
+        url: URL.createObjectURL(png),
+        png,
+        fileName: shareFileName(s),
+        copied,
+        intentUrl: xIntentUrl(text),
+        appUrl: mobile ? xAppUrl(text) : undefined,
+        mobile,
+      });
     } catch {
       alert("Sorry, the card couldn't be made. Please try again.");
     } finally {

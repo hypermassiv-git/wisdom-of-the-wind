@@ -4,23 +4,29 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 
 export interface ShareCardFile {
   url: string;
+  png: Blob;
   fileName: string;
-  /** The image also made it to the clipboard, so it can be pasted. */
-  copied: boolean;
+  /** The copy started when the user tapped Share; true once the card is on the clipboard. */
+  copied: Promise<boolean>;
   /** Link to X's composer with the post text filled in. */
   intentUrl: string;
-  /** Set on phones: the card isn't saved yet, and step 1 saves it (share sheet → Save Image). */
-  file?: File;
   /** Set on phones: opens the X app's composer, where the user is already signed in. */
   appUrl?: string;
+  /** Touch device: tap and press-and-hold wording, and saving goes through the share sheet. */
+  mobile: boolean;
 }
 
-/** Step-by-step guide for attaching the downloaded card to an X post (X's post link can't carry an image). */
+/** Step-by-step guide for pasting the copied card into an X post (X's post link can't carry an image). */
 export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const mobile = !!card.file;
-  // On computers, step 1 (download) is done by the time this opens.
-  const [step, setStep] = useState(mobile ? 1 : 2);
+  const { mobile } = card;
+  const [copied, setCopied] = useState(false);
+  // The copy started on the Share tap is still running.
+  const [copying, setCopying] = useState(true);
+  const [copyFailed, setCopyFailed] = useState(false);
+  // Saved to Photos or Downloads instead of copied: attach it with X's image button.
+  const [saved, setSaved] = useState(false);
+  const [step, setStep] = useState(1);
   const [paste, setPaste] = useState("Ctrl+V");
   // The X app didn't open (not installed?), so offer X in the browser.
   const [noApp, setNoApp] = useState(false);
@@ -29,6 +35,54 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
     ref.current?.showModal();
     if (/Mac|iPhone|iPad/.test(navigator.userAgent)) setPaste("⌘V");
   }, []);
+
+  // Open straight away and let the copy finish in the background (a browser may sit on it, e.g. asking permission).
+  useEffect(() => {
+    let live = true;
+    // Never answered: show the Copy card button.
+    const timer = setTimeout(() => live && setCopying(false), 3000);
+    card.copied.then((ok) => {
+      if (!live) return;
+      setCopying(false);
+      if (ok) {
+        setCopied(true);
+        setStep((n) => Math.max(n, 2));
+      }
+    });
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [card.copied]);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": card.png })]);
+      setCopied(true);
+      setCopying(false);
+      setCopyFailed(false);
+      setStep((n) => Math.max(n, 2));
+    } catch {
+      setCopyFailed(true);
+    }
+  }
+
+  /** For browsers that can't copy images: phones save through the share sheet ("Save Image"), computers download. */
+  async function save() {
+    const files = [new File([card.png], card.fileName, { type: "image/png" })];
+    if (mobile && navigator.canShare?.({ files })) {
+      try {
+        await navigator.share({ files });
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        download();
+      }
+    } else {
+      download();
+    }
+    setSaved(true);
+    setStep((n) => Math.max(n, 2));
+  }
 
   function download() {
     const a = document.createElement("a");
@@ -46,21 +100,11 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
     }, 1500);
   }
 
-  /** Phones: the share sheet offers "Save Image" (to Photos). Without file sharing, download it instead. */
-  async function save() {
-    const files = [card.file!];
-    if (navigator.canShare?.({ files })) {
-      try {
-        await navigator.share({ files });
-      } catch (e) {
-        if (e instanceof DOMException && e.name === "AbortError") return;
-        download();
-      }
-    } else {
-      download();
-    }
-    setStep(2);
-  }
+  const saveLink = (label: string) => (
+    <button onClick={save} className="mt-1 text-xs underline underline-offset-2 hover:text-ink">
+      {label}
+    </button>
+  );
 
   return (
     <dialog
@@ -93,26 +137,32 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
       />
 
       <ol className="mt-5 space-y-1">
-        {mobile ? (
-          <Step n={1} step={step} title="Save the card">
-            <p>Tap Save card, then choose Save Image. Or press and hold the card above to save it.</p>
-            {step === 1 && (
-              <button onClick={save} className="btn-primary mt-3 h-10 px-5 text-sm">
-                Save card
+        <Step n={1} step={step} title={saved ? "Card saved" : copied ? "Card copied" : copying ? "Copying the card…" : "Copy the card"}>
+          {saved ? (
+            <p>{mobile ? "It's in your Photos." : <>Saved as <span className="break-all text-ink-secondary">{card.fileName}</span>.</>}</p>
+          ) : copied ? (
+            <>
+              <p>It&apos;s on your clipboard, ready to paste into your post.</p>
+              <button onClick={copy} className="mt-1 text-xs underline underline-offset-2 hover:text-ink">
+                Copy again
               </button>
-            )}
-          </Step>
-        ) : (
-          <Step n={1} step={step} title="Your card is downloaded">
-            <p>
-              Saved as <span className="break-all text-ink-secondary">{card.fileName}</span>.
-              {card.copied && " It's also copied, ready to paste."}
-            </p>
-            <button onClick={download} className="mt-1 text-xs underline underline-offset-2 hover:text-ink">
-              Download again
-            </button>
-          </Step>
-        )}
+            </>
+          ) : (
+            <>
+              <p>Copy it here, then paste it into your post.</p>
+              {step === 1 && !copying && (
+                <button onClick={copy} className="btn-primary mt-3 h-10 px-5 text-sm">
+                  Copy card
+                </button>
+              )}
+              {copyFailed && (
+                <p className="mt-2 text-xs text-medium">
+                  This browser can&apos;t copy images. {saveLink("Save the card instead")}
+                </p>
+              )}
+            </>
+          )}
+        </Step>
         <Step n={2} step={step} title="Open X">
           <p>Your post is written for you and tags @Neverland_Money.</p>
           {step === 2 &&
@@ -146,20 +196,24 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
             </p>
           )}
         </Step>
-        <Step n={3} step={step} title="Attach the card">
-          {mobile ? (
-            <p>In X, tap the photo icon under your post and pick the card from your Photos.</p>
-          ) : card.copied ? (
+        <Step n={3} step={step} title={saved ? "Attach the card" : "Paste the card"}>
+          {saved ? (
             <p>
-              Click in the post and press <Key>{paste}</Key> to paste it. Or click the image icon and pick the file
-              from your Downloads.
+              {mobile
+                ? "Tap the photo icon under your post and pick the card from your Photos."
+                : "Click the image icon under your post and pick the file from your Downloads."}
             </p>
+          ) : mobile ? (
+            <p>In the post, press and hold where you type, then tap Paste.</p>
           ) : (
-            <p>Click the image icon under your post and pick the file from your Downloads.</p>
+            <p>
+              Click in the post and press <Key>{paste}</Key>.
+            </p>
           )}
+          {step === 3 && !saved && <div>{saveLink("Paste not working? Save the card instead")}</div>}
           {step === 3 && (
             <button onClick={() => setStep(4)} className="btn-ghost mt-3 h-9 text-[13px]">
-              Done, it&apos;s attached
+              Done, it&apos;s in
             </button>
           )}
         </Step>
@@ -177,7 +231,7 @@ export function ShareModal({ card, onClose }: { card: ShareCardFile; onClose: ()
           onClick={() => setStep(step + 1)}
           className="mt-2 text-xs text-ink-muted underline underline-offset-2 hover:text-ink"
         >
-          {step === 1 ? "Already saved it? Skip to the next step" : "X is already open? Skip to the next step"}
+          {step === 1 ? "Already copied it? Skip to the next step" : "X is already open? Skip to the next step"}
         </button>
       )}
     </dialog>
