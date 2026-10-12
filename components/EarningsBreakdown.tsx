@@ -18,7 +18,7 @@ export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalU
     <div className="rounded-chip bg-white/[0.02] p-4 ring-1 ring-white/5">
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <div className="label">You could earn</div>
+          <div className="text-lg font-semibold text-ink">You could earn</div>
           <div className="mt-1 text-3xl font-semibold tabular-nums">
             {usd(s.earnings.net)}
             <span className="ml-1.5 text-sm font-semibold text-ink-muted">a year on {usd(principalUsd)}</span>
