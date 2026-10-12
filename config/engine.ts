@@ -26,7 +26,7 @@ export interface EngineConfig {
 export const ENGINE_CONFIG: EngineConfig = {
   minNetApr: 0.01,
   leverageFraction: 0.5,
-  principalUsd: 1000,
+  principalUsd: 10_000,
   rewardValuation: { MON: 1.0 },
   heldRewards: ["DUST"],
   minLiquidityUsd: 10_000,

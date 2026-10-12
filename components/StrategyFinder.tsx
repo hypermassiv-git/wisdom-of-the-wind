@@ -52,7 +52,7 @@ function withCommas(text: string) {
 
 export function StrategyFinder() {
   const [state, setState] = useState<State>({ status: "idle" });
-  const [amountText, setAmountText] = useState("1,000");
+  const [amountText, setAmountText] = useState("10,000");
   const [sort, setSort] = useState<SortKey>("yield");
   const [type, setType] = useState<TypeFilter>("all");
   const [asset, setAssetState] = useState<AssetFilter>("all");
@@ -69,7 +69,7 @@ export function StrategyFinder() {
   }, [highlightId]);
   const parsed = Number(amountText.replace(/[^0-9.]/g, ""));
   const amountValid = parsed >= 10;
-  const amount = amountValid ? Math.min(parsed, 100_000_000) : 1000;
+  const amount = amountValid ? Math.min(parsed, 100_000_000) : 10_000;
 
   // Quietly load today's rates on arrival, for the landing stats and an instant reveal.
   const [preview, setPreview] = useState<StrategiesResponse | null>(null);
@@ -126,7 +126,7 @@ export function StrategyFinder() {
   }
 
   const teaser = useMemo(
-    () => (preview ? runEngine(preview.snapshot, { ...ENGINE_CONFIG, principalUsd: 1000 }) : null),
+    () => (preview ? runEngine(preview.snapshot, { ...ENGINE_CONFIG, principalUsd: 10_000 }) : null),
     [preview],
   );
 
@@ -210,7 +210,7 @@ export function StrategyFinder() {
                   WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent)",
                 }}
               >
-                <StrategyCard s={top} rank={1} principalUsd={1000} />
+                <StrategyCard s={top} rank={1} principalUsd={10_000} />
               </div>
             </div>
             <button className="btn-ghost mt-2" onClick={reveal}>
@@ -254,7 +254,7 @@ export function StrategyFinder() {
           <AssetPicker assets={assets} value={activeAsset} onChange={setAsset} />
           <div className="panel mt-3 flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
             <label className="block">
-              <span className="label">
+              <span className="block text-lg font-semibold text-ink">
                 {picked ? `How much ${activeAsset}? (in $)` : "How much would you put in?"}
               </span>
               <span className="mt-2 flex items-center gap-1 rounded-full bg-white/[0.06] px-4 py-2 ring-1 ring-white/10 focus-within:ring-violet-strong">
@@ -268,7 +268,7 @@ export function StrategyFinder() {
                 />
               </span>
               {!amountValid ? (
-                <span className="mt-1.5 block text-xs text-medium">Enter an amount of $10 or more. Showing $1,000.</span>
+                <span className="mt-1.5 block text-xs text-medium">Enter an amount of $10 or more. Showing $10,000.</span>
               ) : amount >= 100_000 ? (
                 <span className="mt-1.5 block text-xs text-medium">
                   Figures include how an amount this large moves each market&apos;s rates. Swap costs aren&apos;t
@@ -287,7 +287,7 @@ export function StrategyFinder() {
                   key={key}
                   onClick={() => setSort(key)}
                   aria-pressed={sort === key}
-                  className={`h-9 flex-1 rounded-full px-4 text-[13px] font-medium whitespace-nowrap transition-colors ${
+                  className={`h-9 flex-1 rounded-full px-4 text-[13px] font-semibold whitespace-nowrap transition-colors ${
                     sort === key ? "bg-white/10 text-ink" : "text-ink-muted hover:text-ink"
                   }`}
                 >
@@ -310,7 +310,7 @@ export function StrategyFinder() {
                   key={key}
                   onClick={() => setType(key)}
                   aria-pressed={type === key}
-                  className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 text-[13px] font-medium whitespace-nowrap transition-colors ${
+                  className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold whitespace-nowrap transition-colors ${
                     type === key ? "bg-white/10 text-ink ring-1 ring-white/20" : "text-ink-muted ring-1 ring-white/10 hover:text-ink"
                   }`}
                 >

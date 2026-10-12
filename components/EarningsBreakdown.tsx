@@ -21,12 +21,12 @@ export function EarningsBreakdown({ s, principalUsd }: { s: Strategy; principalU
           <div className="text-sm text-ink-muted">You could earn</div>
           <div className="mt-1 text-3xl font-semibold tabular-nums">
             {usd(s.earnings.net)}
-            <span className="ml-1.5 text-sm font-medium text-ink-muted">a year on {usd(principalUsd)}</span>
+            <span className="ml-1.5 text-sm font-semibold text-ink-muted">a year on {usd(principalUsd)}</span>
           </div>
         </div>
         <div className="text-right text-sm font-semibold tabular-nums text-ink-secondary">
           {((s.earnings.net / principalUsd) * 100).toFixed(1)}%
-          <div className="text-xs font-normal text-ink-muted">a year</div>
+          <div className="text-xs font-semibold text-ink-muted">a year</div>
         </div>
       </div>
 
@@ -101,7 +101,7 @@ function Row({
       </dt>
       <dd className={`flex items-center gap-1 font-semibold whitespace-nowrap ${cost ? "text-high" : ""}`}>
         {value}
-        <span className="ml-0.5 flex items-center gap-1 text-xs font-normal text-ink-muted">
+        <span className="ml-0.5 flex items-center gap-1 text-xs font-semibold text-ink-muted">
           <TokenIcon symbol={token} size={14} />
           {baseName(token)}
         </span>
