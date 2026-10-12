@@ -304,8 +304,8 @@ export function StrategyFinder() {
             {...typeRow}
             role="group"
             aria-label="Filter by strategy type"
-            // Vertical padding keeps the chips' rings from being clipped by the scroll container.
-            className="scroll-fade -mx-4 mt-2 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:mx-0 sm:mt-3 sm:flex-wrap sm:overflow-visible sm:px-0 sm:py-0"
+            // Vertical padding leaves room for the focus outline, which the scroll container would clip.
+            className="scroll-fade -mx-4 mt-1.5 flex scroll-px-14 gap-2 overflow-x-auto px-4 py-1.5 [scrollbar-width:none] sm:mx-0 sm:mt-3 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pt-0 sm:pb-1"
           >
             {([["all", "All types"], ...TYPE_FILTERS] as [TypeFilter, string][])
               .filter(([key]) => key === "all" || counts[key])
@@ -315,7 +315,7 @@ export function StrategyFinder() {
                   onClick={() => setType(key)}
                   aria-pressed={type === key}
                   className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold whitespace-nowrap transition-colors ${
-                    type === key ? "bg-white/10 text-ink ring-1 ring-white/20" : "text-ink-muted ring-1 ring-white/10 hover:text-ink"
+                    type === key ? "border border-white/20 bg-white/10 text-ink" : "border border-white/10 text-ink-muted hover:text-ink"
                   }`}
                 >
                   {label}
