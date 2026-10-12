@@ -101,7 +101,7 @@ function Row({
         {label}
       </dt>
       <dd
-        className={`flex items-center gap-1 ${reward ? "font-semibold text-reward" : muted ? "text-ink-muted" : "font-semibold"}`}
+        className={`flex shrink-0 items-center gap-1 whitespace-nowrap ${reward ? "font-semibold text-reward" : muted ? "text-ink-muted" : "font-semibold"}`}
       >
         {value}
         <span className="ml-0.5 flex items-center gap-1 text-xs font-semibold text-ink-muted">

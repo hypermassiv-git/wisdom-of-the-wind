@@ -19,6 +19,7 @@ import { AssetPicker } from "./AssetPicker";
 import { Glossary } from "./Glossary";
 import { HowItWorks } from "./HowItWorks";
 import { StrategyCard } from "./StrategyCard";
+import { useScrollFade } from "./useScrollFade";
 
 type State =
   | { status: "idle" }
@@ -51,6 +52,7 @@ export function StrategyFinder() {
   const [asset, setAssetState] = useState<AssetFilter>("all");
   const [showAll, setShowAll] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const { props: typeRow } = useScrollFade<HTMLDivElement>();
 
   // Scroll to and briefly highlight a card (used by the starter pick).
   useEffect(() => {
@@ -292,9 +294,11 @@ export function StrategyFinder() {
 
           {!picked && (
           <div
+            {...typeRow}
             role="group"
             aria-label="Filter by strategy type"
-            className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+            // Vertical padding keeps the chips' rings from being clipped by the scroll container.
+            className="scroll-fade -mx-4 mt-2 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:mx-0 sm:mt-3 sm:flex-wrap sm:overflow-visible sm:px-0 sm:py-0"
           >
             {([["all", "All types"], ...TYPE_FILTERS] as [TypeFilter, string][])
               .filter(([key]) => key === "all" || counts[key])
