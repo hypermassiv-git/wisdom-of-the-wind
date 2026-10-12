@@ -43,9 +43,16 @@ function formatTime(iso: string) {
   });
 }
 
+/** Typed amount with thousands commas: "10000.5" → "10,000.5". Keeps digits and the first decimal point. */
+function withCommas(text: string) {
+  const [int, ...rest] = text.replace(/[^0-9.]/g, "").split(".");
+  const whole = int ? Number(int).toLocaleString("en-US") : "";
+  return rest.length ? `${whole || "0"}.${rest.join("")}` : whole;
+}
+
 export function StrategyFinder() {
   const [state, setState] = useState<State>({ status: "idle" });
-  const [amountText, setAmountText] = useState("1000");
+  const [amountText, setAmountText] = useState("1,000");
   const [sort, setSort] = useState<SortKey>("yield");
   const [type, setType] = useState<TypeFilter>("all");
   const [asset, setAssetState] = useState<AssetFilter>("all");
@@ -255,7 +262,7 @@ export function StrategyFinder() {
                 <input
                   inputMode="decimal"
                   value={amountText}
-                  onChange={(e) => setAmountText(e.target.value)}
+                  onChange={(e) => setAmountText(withCommas(e.target.value))}
                   className="w-32 bg-transparent text-lg font-semibold tabular-nums outline-none"
                   aria-label="Amount in US dollars"
                 />
