@@ -156,6 +156,17 @@ body::before {
     color: var(--color-label);
   }
 
+  /* A sideways-scrolling row fades out on whichever side has more to scroll to (set by the component). */
+  .scroll-fade {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--fade-l, 0px),
+      #000 calc(100% - var(--fade-r, 0px)),
+      transparent
+    );
+  }
+
   .skeleton {
     background-image: linear-gradient(
       90deg,

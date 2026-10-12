@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssetFilter, HeldAsset } from "@/lib/sortFilter";
 import { TokenIcon } from "./TokenIcon";
 
@@ -22,12 +22,30 @@ export function AssetPicker({
   // Everyday tokens first, then ones that earn on their own (staked MON, PTs, yield stablecoins).
   const shown = [...assets.filter((a) => a.plain), ...assets.filter((a) => !a.plain)];
   const row = useRef<HTMLDivElement>(null);
+  // Which ends of the row have more tokens to scroll to, so they fade and hint at scrolling.
+  const [more, setMore] = useState({ left: false, right: false });
+  const updateMore = useCallback(() => {
+    const r = row.current;
+    if (!r) return;
+    const left = r.scrollLeft > 1;
+    const right = r.scrollLeft + r.clientWidth < r.scrollWidth - 1;
+    setMore((m) => (m.left === left && m.right === right ? m : { left, right }));
+  }, []);
 
   // On phones the row scrolls sideways; keep the picked token in view.
   useEffect(() => {
     const el = row.current?.querySelector<HTMLElement>('[aria-pressed="true"]');
     if (el && row.current) row.current.scrollLeft = el.offsetLeft - row.current.offsetLeft - 20;
-  }, [value]);
+    updateMore();
+  }, [value, updateMore]);
+
+  useEffect(() => {
+    const r = row.current;
+    if (!r) return;
+    const ro = new ResizeObserver(updateMore);
+    ro.observe(r);
+    return () => ro.disconnect();
+  }, [updateMore, assets]);
 
   return (
     <div className="panel p-5 sm:p-6">
@@ -36,7 +54,10 @@ export function AssetPicker({
         ref={row}
         role="group"
         aria-label="Filter by the token you have"
-        className="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+        onScroll={updateMore}
+        // Vertical padding keeps the chips' rings from being clipped by the scroll container.
+        className="scroll-fade -mx-5 mt-2 flex gap-2 overflow-x-auto px-5 py-1 [scrollbar-width:none] sm:mx-0 sm:mt-3 sm:flex-wrap sm:overflow-visible sm:px-0 sm:py-0"
+        style={{ "--fade-l": more.left ? "48px" : "0px", "--fade-r": more.right ? "48px" : "0px" } as React.CSSProperties}
       >
         <button onClick={() => onChange("all")} aria-pressed={value === "all"} className={chip(value === "all")}>
           All tokens
