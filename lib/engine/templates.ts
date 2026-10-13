@@ -31,7 +31,7 @@ export const TEMPLATES: Record<StrategyType, Templates> = {
     action:
       "Deposit {deposit}, borrow {borrow} against it, {convert} more {deposit} and deposit that too, so about {leverage} times your money ends up earning.",
     whyNow:
-      "{deposit} earns about {depositPer1k} a year for every $1,000, while borrowing {borrow} costs only about {borrowPer1k}. Turning borrowed {borrow} into more {deposit} adds about {spreadInterest} a year on top of what your {principal} earns by itself{plusDust}.",
+      "{deposit} earns about {depositOnPrincipal} a year on {principal}, while borrowing the same amount of {borrow} costs only about {borrowOnPrincipal}. Turning borrowed {borrow} into more {deposit} adds about {spreadInterest} a year on top of what your {principal} earns by itself{plusDust}.",
     whyNowRewardDriven:
       "Neverland pays {rewardName} rewards both for holding {deposit} and for borrowing {borrow}. Looping makes both bigger, adding about {spreadRewards} a year in {rewardName} on top of what your {principal} earns by itself, while the loan's interest costs about {spreadInterestAbs} more than the borrowed coins earn.",
   },
@@ -40,7 +40,7 @@ export const TEMPLATES: Record<StrategyType, Templates> = {
     action:
       "Deposit {deposit} in the {borrowMarket}, borrow {borrow} there, and lend that {borrow} in the {lendMarket}.",
     whyNow:
-      "Borrowing {borrow} in the {borrowMarket} costs about {borrowPer1k} a year for every $1,000, but lending it in the {lendMarket} earns about {lendPer1k}. That gap adds about {spreadInterest} a year on top of what your {principal} earns by itself{plusDust}.",
+      "Borrowing {borrow} in the {borrowMarket} costs about {borrowOnPrincipal} a year on {principal}, but lending it in the {lendMarket} earns about {lendOnPrincipal}. That gap adds about {spreadInterest} a year on top of what your {principal} earns by itself{plusDust}.",
     whyNowRewardDriven:
       "Neverland pays {rewardName} rewards to people who borrow {borrow} in the {borrowMarket} and to people who lend it in the {lendMarket}, so you collect on both sides: about {spreadRewards} a year on top of what your {principal} earns by itself, while the loan's interest costs about {spreadInterestAbs} more than the borrowed coins earn.",
   },
@@ -48,7 +48,7 @@ export const TEMPLATES: Record<StrategyType, Templates> = {
     name: "Borrow {borrow}, earn with {lend}{lendSuffix}",
     action: "Deposit {deposit}, borrow {borrow} against it, and {lendAction}.",
     whyNow:
-      "Borrowing {borrow} costs about {borrowPer1k} a year for every $1,000, while {lend} earns about {lendPer1k}. Both are stablecoins, so that gap adds about {spreadInterest} a year on top of what your {principal} earns by itself{plusDust}.",
+      "Borrowing {borrow} costs about {borrowOnPrincipal} a year on {principal}, while {lend} earns about {lendOnPrincipal}. Both are stablecoins, so that gap adds about {spreadInterest} a year on top of what your {principal} earns by itself{plusDust}.",
     whyNowRewardDriven:
       "Neverland pays {rewardName} rewards for borrowing {borrow} and for holding {lend}, so you collect on both sides: about {spreadRewards} a year on top of what your {principal} earns by itself, while the loan's interest costs about {spreadInterestAbs} more than the borrowed coins earn.",
   },
@@ -57,7 +57,7 @@ export const TEMPLATES: Record<StrategyType, Templates> = {
     action:
       "Deposit {deposit}, borrow {borrow} against it (only {borrowShare} of the maximum), and {lendAction}.",
     whyNow:
-      "Your {deposit} keeps earning while you borrow {borrow} against it. Borrowing costs about {borrowPer1k} a year for every $1,000 and {lend} earns about {lendPer1k}, which adds about {spreadInterest} a year on top of what your {principal} earns by itself{plusDust}.",
+      "Your {deposit} keeps earning while you borrow {borrow} against it. Borrowing costs about {borrowOnPrincipal} a year on {principal} and {lend} earns about {lendOnPrincipal}, which adds about {spreadInterest} a year on top of what your {principal} earns by itself{plusDust}.",
     whyNowRewardDriven:
       "Your {deposit} keeps earning while Neverland pays {rewardName} rewards for borrowing {borrow} and for holding {lend}. That adds about {spreadRewards} a year on top of what your {principal} earns by itself, while the loan's interest costs about {spreadInterestAbs} more than the borrowed coins earn.",
   },
@@ -122,9 +122,9 @@ export function templateVars(
     marketSuffix: deposit.marketKind === "isolated" ? ` in the ${shortMarket(c.vars.depositMarket)}` : "",
     borrowMarket: c.vars.borrowMarket,
     lendMarket: c.vars.lendMarket ?? "",
-    depositPer1k: usd(depositYield * 1000),
-    borrowPer1k: borrow ? usd(borrow.baseRate * 1000) : "",
-    lendPer1k: lend ? usd((lend.baseRate + lend.builtInRate) * 1000) : "",
+    depositOnPrincipal: usd(depositYield * config.principalUsd),
+    borrowOnPrincipal: borrow ? usd(borrow.baseRate * config.principalUsd) : "",
+    lendOnPrincipal: lend ? usd((lend.baseRate + lend.builtInRate) * config.principalUsd) : "",
     depositTotal: usd(depositYield * config.principalUsd),
     fromSource: builtIn && deposit.builtInRate > 0 ? ` from ${builtIn.source}` : "",
     plusDepositRewards:
