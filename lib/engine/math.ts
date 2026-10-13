@@ -1,4 +1,5 @@
-/** Pure position math. No I/O, no config imports — everything is passed in. */
+/** Pure position math. No I/O; the only config is E-Mode display names. */
+import { EMODE_APP_NAMES } from "@/config/engine";
 import type { Market, Reserve } from "@/lib/data/types";
 import type { BorrowLimits, Earnings, Leg } from "./types";
 
@@ -25,7 +26,8 @@ export function effectiveLimits(market: Market, collateral: Reserve, debt: Reser
  */
 export function borrowLimits(market: Market, collateral: Reserve, debt: Reserve): BorrowLimits {
   const limits = effectiveLimits(market, collateral, debt);
-  const eMode = limits.ltv > collateral.ltv ? market.eModes.find((m) => m.id === collateral.eModeId)?.label : undefined;
+  const label = limits.ltv > collateral.ltv ? market.eModes.find((m) => m.id === collateral.eModeId)?.label : undefined;
+  const eMode = label && (EMODE_APP_NAMES[label] ?? label);
   return { ...limits, normalLtv: collateral.ltv, normalLiquidationThreshold: collateral.liquidationThreshold, ...(eMode ? { eMode } : {}) };
 }
 

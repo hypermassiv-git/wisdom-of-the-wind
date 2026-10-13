@@ -39,7 +39,7 @@ export interface BorrowLimits {
   /** The deposit's own LTV and liquidation threshold, outside E-Mode. */
   normalLtv: number;
   normalLiquidationThreshold: number;
-  /** E-Mode category to turn on in Neverland to get `ltv`; absent when E-Mode isn't needed. */
+  /** E-Mode category to turn on, as the Neverland app names it, to get `ltv`; absent when E-Mode isn't needed. */
   eMode?: string;
 }
 
