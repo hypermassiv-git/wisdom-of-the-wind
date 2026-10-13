@@ -60,6 +60,51 @@ function loopRounds(b: number): number {
   return Math.max(2, Math.min(6, Math.ceil(Math.log(0.1) / Math.log(b))));
 }
 
+const TIMES: Record<number, string> = { 1: "once more", 2: "twice more", 3: "three more times", 4: "four more times", 5: "five more times", 6: "six more times" };
+
+/** 0.75 → "75%", 0.375 → "37.5%". */
+function percent(x: number): string {
+  return `${+(x * 100).toFixed(1)}%`;
+}
+
+/** Turning on E-Mode, when the loan is sized from the E-Mode borrow limit. */
+function eModeStep(s: Strategy): string | null {
+  const l = s.borrowLimits;
+  if (!l?.eMode) return null;
+  const deposit = s.legs.find((x) => x.role === "deposit")!;
+  const borrow = s.legs.find((x) => x.role === "borrow")!;
+  const d = displayName(deposit.symbol);
+  const share = borrow.amountUsd / deposit.amountUsd;
+  const without =
+    share >= l.normalLtv
+      ? "Without it, Neverland won't let you borrow this much."
+      : `Without it, your Health Factor would start at about ${(l.normalLiquidationThreshold / share).toFixed(1)} instead of ${(
+          l.liquidationThreshold / share
+        ).toFixed(1)}, leaving less room before liquidation.`;
+  return `Before borrowing, turn on E-Mode in the Neverland app and choose "${l.eMode}". It raises how much you can borrow against your ${d} from ${percent(l.normalLtv)} to ${percent(l.ltv)} of its value. ${without}`;
+}
+
+/** Where the loan size comes from: the market's borrow limit (LTV) and the share of it this plan uses. */
+function limitSentence(s: Strategy, deposit: Leg, collateralUsd: number): string {
+  const l = s.borrowLimits;
+  if (!l) return "";
+  const d = displayName(deposit.symbol);
+  return `In the ${deposit.marketName} you can borrow up to ${percent(l.ltv)} of your ${d}'s value (its borrow limit, or LTV), which would be ${usd(
+    collateralUsd * l.ltv,
+  )}. This plan borrows half of that, ${percent(l.ltv * ENGINE_CONFIG.leverageFraction)} of your deposit, to leave a safety buffer.`;
+}
+
+/** What the Health Factor should read once the loan is taken, and when to act. */
+function healthStep(s: Strategy, deposit: Leg, borrow: Leg): string {
+  const l = s.borrowLimits;
+  const hf = l ? (deposit.amountUsd * l.liquidationThreshold) / borrow.amountUsd : null;
+  const d = displayName(deposit.symbol);
+  const start = hf
+    ? `${s.type === "yieldLoop" ? "Once you're done" : "Right after borrowing"}, the Neverland app should show a Health Factor of about ${hf.toFixed(1)}. Check it now and then:`
+    : "Check your Health Factor in the Neverland app now and then:";
+  return `${start} if it drops below 1.2, repay some of the loan. At 1, part of your ${d} is sold to pay the loan back.`;
+}
+
 /** A walkthrough in full sentences, using the amount the user typed. */
 function steps(s: Strategy, principal: number): string[] {
   const deposit = s.legs.find((l) => l.role === "deposit")!;
@@ -69,7 +114,12 @@ function steps(s: Strategy, principal: number): string[] {
   const lines: string[] = [];
   const get = getStep(deposit.symbol);
   if (get) lines.push(get);
-  lines.push(`Deposit your ${usd(principal)} of ${d} in the ${deposit.marketName}. ${earnsSentence(deposit, principal, s.heldPriceUsd)}`);
+  const looping = s.type === "yieldLoop";
+  lines.push(
+    looping
+      ? `Deposit your ${usd(principal)} of ${d} in the ${deposit.marketName}.`
+      : `Deposit your ${usd(principal)} of ${d} in the ${deposit.marketName}. ${earnsSentence(deposit, principal, s.heldPriceUsd)}`,
+  );
   if (!borrow) {
     const maturity = getAsset(deposit.symbol)?.builtInYield?.kind === "pt";
     lines.push(
@@ -81,14 +131,23 @@ function steps(s: Strategy, principal: number): string[] {
   }
   const b = displayName(borrow.symbol);
   const borrowRewards = rewardsOn(borrow, borrow.amountUsd, s.heldPriceUsd);
-  const costLine = `In total the loan costs about ${usd(borrow.baseRate * borrow.amountUsd)} a year in interest${
+  const costLine = `The loan costs about ${usd(borrow.baseRate * borrow.amountUsd)} a year in interest${
     borrowRewards ? `, and you collect ${borrowRewards} for borrowing` : ""
   }.`;
-  if (s.type === "yieldLoop") {
+  const eMode = eModeStep(s);
+  if (eMode) lines.push(eMode);
+  if (looping) {
     const fraction = borrow.amountUsd / deposit.amountUsd;
-    const first = principal * fraction;
+    // Each round borrows `fraction` of what was just deposited; the last one tops up to the full loan.
+    const rounds = loopRounds(fraction);
+    const amounts = Array.from({ length: rounds }, (_, k) => principal * fraction ** (k + 2));
+    amounts[rounds - 1] = borrow.amountUsd - principal * fraction - amounts.slice(0, -1).reduce((a, x) => a + x, 0);
     const n = lines.length + 1;
-    lines.push(`Borrow about ${usd(first)} of ${b} against your deposit.`);
+    lines.push(
+      `Borrow ${usd(principal * fraction)} of ${b} against your deposit. ${limitSentence(s, deposit, principal)} Each round, you borrow ${percent(
+        fraction,
+      )} of what you've just deposited.`,
+    );
     const asset = getAsset(deposit.symbol);
     lines.push(
       asset?.conversion === "stake" && asset.stakeWith
@@ -96,22 +155,25 @@ function steps(s: Strategy, principal: number): string[] {
         : `Swap the borrowed ${b} for more ${d}${swapWhere(deposit.symbol)} and deposit it too.`,
     );
     lines.push(
-      `Repeat steps ${n} and ${n + 1} about ${loopRounds(fraction)} more times, borrowing a bit less each round, until you've borrowed about ${usd(
-        borrow.amountUsd,
-      )} in total and have about ${usd(deposit.amountUsd)} of ${d} deposited. ${costLine}`,
+      `Repeat steps ${n} and ${n + 1} ${TIMES[rounds] ?? `${rounds} more times`}, borrowing ${amounts.map((a) => usd(a)).join(", then ")} of ${b}.`,
+    );
+    lines.push(
+      `You've now borrowed ${usd(borrow.amountUsd)} of ${b} in total and have ${usd(deposit.amountUsd)} of ${d} deposited. ${earnsSentence(
+        deposit,
+        deposit.amountUsd,
+        s.heldPriceUsd,
+      )} ${costLine}`,
     );
   } else if (lend) {
-    lines.push(`Borrow about ${usd(borrow.amountUsd)} of ${b} against your deposit. ${costLine}`);
+    lines.push(`Borrow ${usd(borrow.amountUsd)} of ${b} against your deposit. ${limitSentence(s, deposit, principal)} ${costLine}`);
     const l = displayName(lend.symbol);
     const move =
       lend.symbol === borrow.symbol
-        ? `Lend the ${b} in the ${lend.marketName}.`
-        : `Swap the ${b} for ${l}${swapWhere(lend.symbol)} and deposit it in the ${lend.marketName}.`;
+        ? `Lend the ${usd(lend.amountUsd)} of ${b} in the ${lend.marketName}.`
+        : `Swap the ${usd(borrow.amountUsd)} of ${b} for ${l}${swapWhere(lend.symbol)} and deposit it in the ${lend.marketName}.`;
     lines.push(`${move} ${earnsSentence(lend, lend.amountUsd, s.heldPriceUsd)}`);
   }
-  lines.push(
-    "Check your Health Factor in the Neverland app now and then. If it gets close to 1, repay some of the loan.",
-  );
+  lines.push(healthStep(s, deposit, borrow));
   return lines;
 }
 
@@ -237,11 +299,6 @@ export function StrategyCard({
                 ))}
               </ol>
             </section>
-          )}
-          {s.legs.some((l) => l.role === "borrow") && (
-            <p className="text-xs text-ink-muted">
-              These estimates assume you borrow half of the most you&apos;re allowed to.
-            </p>
           )}
           <a
             href="https://app.neverland.money"

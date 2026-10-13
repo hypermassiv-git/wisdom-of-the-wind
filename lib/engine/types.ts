@@ -30,12 +30,27 @@ export interface Earnings {
   heldByToken: Record<string, number>;
 }
 
+/** Borrow limits a loan was sized from, as share of the deposit's value (0.75 = 75%). */
+export interface BorrowLimits {
+  /** Most you can borrow against the deposit here (its LTV, or the E-Mode one if higher). */
+  ltv: number;
+  /** Loan share at which part of the deposit gets sold (Health Factor 1). */
+  liquidationThreshold: number;
+  /** The deposit's own LTV and liquidation threshold, outside E-Mode. */
+  normalLtv: number;
+  normalLiquidationThreshold: number;
+  /** E-Mode category to turn on in Neverland to get `ltv`; absent when E-Mode isn't needed. */
+  eMode?: string;
+}
+
 /** What a generator produces, before risk and wording are added. */
 export interface Candidate {
   type: StrategyType;
   legs: Leg[];
   /** Deposit ÷ debt, weighted by liquidation threshold. Above 1 is safe; lower is riskier. */
   safetyScore: number;
+  /** Limits the loan was sized from; absent when nothing is borrowed. */
+  borrowLimits?: BorrowLimits;
   /** Symbols used for wording. */
   vars: {
     deposit: string;

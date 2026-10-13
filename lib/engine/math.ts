@@ -1,6 +1,6 @@
 /** Pure position math. No I/O, no config imports — everything is passed in. */
 import type { Market, Reserve } from "@/lib/data/types";
-import type { Earnings, Leg } from "./types";
+import type { BorrowLimits, Earnings, Leg } from "./types";
 
 export interface Limits {
   ltv: number;
@@ -17,6 +17,16 @@ export function effectiveLimits(market: Market, collateral: Reserve, debt: Reser
     if (e) return { ltv: e.ltv, liquidationThreshold: e.liquidationThreshold };
   }
   return { ltv: collateral.ltv, liquidationThreshold: collateral.liquidationThreshold };
+}
+
+/**
+ * The limits a loan is sized from, for the walkthrough text: the borrow limit that applies, the
+ * collateral's normal limit, and the efficiency-mode category the user must turn on to get it.
+ */
+export function borrowLimits(market: Market, collateral: Reserve, debt: Reserve): BorrowLimits {
+  const limits = effectiveLimits(market, collateral, debt);
+  const eMode = limits.ltv > collateral.ltv ? market.eModes.find((m) => m.id === collateral.eModeId)?.label : undefined;
+  return { ...limits, normalLtv: collateral.ltv, normalLiquidationThreshold: collateral.liquidationThreshold, ...(eMode ? { eMode } : {}) };
 }
 
 /** Share of the deposit that gets borrowed: max LTV scaled down to be conservative. */

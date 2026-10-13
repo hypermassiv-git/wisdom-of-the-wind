@@ -4,7 +4,7 @@
  */
 import { getAsset } from "@/config/assets";
 import { bestPerGroup, type GenContext, isBorrowable, isCollateral, makeLeg, maturityOf } from "../helpers";
-import { borrowFraction, effectiveLimits, loopSizes, safetyScore } from "../math";
+import { borrowFraction, borrowLimits, effectiveLimits, loopSizes, safetyScore } from "../math";
 import type { Candidate } from "../types";
 
 export function yieldLoops(ctx: GenContext): Candidate[] {
@@ -30,6 +30,7 @@ export function yieldLoops(ctx: GenContext): Candidate[] {
           makeLeg("borrow", { market, reserve: plain }, borrowed, y),
         ],
         safetyScore: safetyScore(supplied, limits.liquidationThreshold, borrowed),
+        borrowLimits: borrowLimits(market, reserve, plain),
         vars: {
           deposit: reserve.symbol,
           borrow: plain.symbol,
