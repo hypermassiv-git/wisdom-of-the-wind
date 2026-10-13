@@ -1,48 +1,68 @@
+import type { ReactNode } from "react";
 import type { RiskLevel } from "@/lib/engine/types";
 import { Chevron } from "./Chevron";
 import { RiskBadge } from "./RiskBadge";
+import { TokenIcon } from "./TokenIcon";
 
-const TERMS: [string, string][] = [
-  ["Deposit", "Putting your coins into Neverland so they earn. You can take them back out later."],
-  ["Borrow", "Taking a loan against your deposit. You pay interest on it, and you must keep enough deposited to cover it."],
-  [
-    "Health Factor",
-    "Neverland's measure of how covered your loan is. Above 1 is safe; the higher, the more room you have. If it falls below 1, part of your deposit is sold to repay the loan.",
-  ],
-  ["Liquidation", "What happens below a Health Factor of 1: some of your deposit is sold to repay the loan, with a small penalty."],
-  ["Loop", "Deposit, borrow, turn the loan into more of your deposit, and repeat. It makes your position bigger than the money you started with."],
-  [
-    "DUST",
-    "Your piece of Neverland. You collect it for depositing and borrowing, on top of interest. Lock it to get veDUST, which pays you part of Neverland's revenue in USDC every week and gives you a vote on how Neverland is run.",
-  ],
-  [
-    "MON rewards",
-    "Extra MON that Neverland hands out through Merkl to lenders of some assets. You claim it at merkl.xyz. Earnings here count it at today's MON price.",
-  ],
-  ["MON", "The main coin of the Monad network."],
-  ["shMON, sMON, gMON", "MON that's been staked with FastLane (shMON), Kintsu (sMON) or Magma (gMON). They earn MON staking rewards and track MON's price. You can get them by staking MON with the issuer or swapping on a DEX."],
-  ["AUSD, USDC, USDT0", "Stablecoins: tokens designed to stay worth $1 each."],
-  ["earnAUSD", "AUSD placed in a vault that earns interest on its own."],
-  ["syzUSD", "Staked Yuzu USD: a stablecoin that earns Yuzu's staking yield on its own."],
-  [
-    "PT-AUSD, PT-shMON",
-    "Pendle principal tokens. You buy them below face value and they're worth the full amount on their maturity date, which gives a fixed yearly rate.",
-  ],
-  ["Main pool vs isolated market", "The main pool holds most assets. Isolated markets are smaller, separate pools for one pair of assets."],
-  ["DEX", "An app for swapping one coin for another. Network fees on Monad are usually tiny."],
+/** Words, grouped by topic. Keep each meaning to one short line. */
+const GROUPS: { title: string; terms: [string, string][] }[] = [
+  {
+    title: "The basics",
+    terms: [
+      ["Deposit", "Put coins into Neverland so they earn interest."],
+      ["Borrow", "Take a loan against your deposit. You pay interest on it."],
+      ["Loop", "Borrow, turn the loan into more of your deposit, and repeat."],
+    ],
+  },
+  {
+    title: "Keeping a loan safe",
+    terms: [
+      ["Borrow limit (LTV)", "The most you can borrow, as a share of your deposit. Strategies here use half."],
+      ["E-Mode", "A Neverland setting that raises the limit for coins that move together, like shMON and MON."],
+      ["Health Factor", "How covered your loan is. Above 1 is safe; higher is safer."],
+      ["Liquidation", "Below 1, part of your deposit is sold to repay the loan, plus a penalty."],
+    ],
+  },
+  {
+    title: "Rewards",
+    terms: [
+      ["DUST", "Your piece of Neverland. Lock it as veDUST for a weekly cut of revenue in USDC, and a vote."],
+      ["MON rewards", "Extra MON on some deposits and loans. Claim it at merkl.xyz."],
+    ],
+  },
+  {
+    title: "Places",
+    terms: [
+      ["Main pool", "Neverland's big shared market for most coins."],
+      ["Isolated market", "A smaller, separate market for one pair of coins."],
+      ["DEX", "An app for swapping one coin for another."],
+    ],
+  },
+];
+
+const COINS: { symbols: string[]; name: string; meaning: string }[] = [
+  { symbols: ["MON"], name: "MON", meaning: "Monad's main coin" },
+  { symbols: ["shMON", "sMON", "gMON"], name: "shMON, sMON, gMON", meaning: "Staked MON that earns staking yield" },
+  { symbols: ["AUSD", "USDC", "USDT0"], name: "AUSD, USDC, USDT0", meaning: "Stablecoins, worth $1 each" },
+  { symbols: ["earnAUSD"], name: "earnAUSD", meaning: "AUSD in a vault that earns on its own" },
+  { symbols: ["syzUSD"], name: "syzUSD", meaning: "Yuzu's stablecoin that earns on its own" },
+  { symbols: ["PT-AUSD", "PT-shMON"], name: "PT-AUSD, PT-shMON", meaning: "Fixed-rate tokens, full value at maturity" },
 ];
 
 const RISK_LEVELS: [RiskLevel, string][] = [
-  [
-    "Low",
-    "Nothing is borrowed, or your deposit and loan track the same asset (e.g. shMON against MON), with at most one small extra factor.",
-  ],
-  [
-    "Medium",
-    "Borrowing against a different kind of asset, or two small factors together. Small factors are repeated borrowing, earnings that rely on current reward rates, and lending into a smaller market.",
-  ],
-  ["High", "Borrowing against a different kind of asset plus other factors, where a price drop could trigger liquidation."],
+  ["Low", "No loan, or the deposit and loan move together (like shMON and MON)."],
+  ["Medium", "A loan against a different kind of coin, or two small extra risks."],
+  ["High", "A loan against a different kind of coin plus more risks. A price drop could trigger liquidation."],
 ];
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="border-t border-white/10 pt-4">
+      <h3 className="label">{title}</h3>
+      {children}
+    </section>
+  );
+}
 
 export function Glossary() {
   return (
@@ -51,29 +71,55 @@ export function Glossary() {
         New here? What these words mean, and how risk is rated
         <Chevron />
       </summary>
-      <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
-        {TERMS.map(([term, def]) => (
-          <div key={term}>
-            <dt className="font-semibold">{term}</dt>
-            <dd className="mt-0.5 leading-relaxed text-ink-secondary">{def}</dd>
-          </div>
+      <div className="mt-3 space-y-5">
+        {GROUPS.map((g) => (
+          <Section key={g.title} title={g.title}>
+            <dl className="mt-1 divide-y divide-white/5">
+              {g.terms.map(([term, def]) => (
+                <div key={term} className="grid gap-x-6 gap-y-0.5 py-2.5 sm:grid-cols-[10rem_1fr]">
+                  <dt className="font-semibold">{term}</dt>
+                  <dd className="text-ink-secondary">{def}</dd>
+                </div>
+              ))}
+            </dl>
+          </Section>
         ))}
-      </dl>
-      <div className="label mt-5">Risk levels</div>
-      <dl className="mt-3 space-y-2.5">
-        {RISK_LEVELS.map(([level, def]) => (
-          <div key={level} className="flex items-start gap-3">
-            <dt className="w-[6.5rem] shrink-0">
-              <RiskBadge level={level} />
-            </dt>
-            <dd className="leading-relaxed text-ink-secondary">{def}</dd>
-          </div>
-        ))}
-      </dl>
-      <p className="mt-4 text-xs leading-relaxed text-ink-muted">
-        Risk levels are about losing money through liquidation or funds being tied up. Separately, anything held in MON,
-        bitcoin, ether or gold goes up and down with that asset&apos;s price.
-      </p>
+
+        <Section title="Coins">
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {COINS.map((c) => (
+              <li key={c.name} className="flex items-center gap-3 rounded-xl bg-white/[0.03] px-3 py-2.5 ring-1 ring-white/10">
+                <span className="flex shrink-0 -space-x-1.5">
+                  {c.symbols.map((sym) => (
+                    <TokenIcon key={sym} symbol={sym} size={22} />
+                  ))}
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-semibold">{c.name}</span>
+                  <span className="block text-xs text-ink-secondary">{c.meaning}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        <Section title="Risk levels">
+          <dl className="mt-1 divide-y divide-white/5">
+            {RISK_LEVELS.map(([level, def]) => (
+              <div key={level} className="grid items-center gap-x-6 gap-y-1.5 py-2.5 sm:grid-cols-[10rem_1fr]">
+                <dt>
+                  <RiskBadge level={level} />
+                </dt>
+                <dd className="text-ink-secondary">{def}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-2 text-xs text-ink-muted">
+            Small extra risks: looping, relying on reward rates, or lending into a smaller market. Separately, MON,
+            bitcoin, ether and gold go up and down with their own price.
+          </p>
+        </Section>
+      </div>
     </details>
   );
 }

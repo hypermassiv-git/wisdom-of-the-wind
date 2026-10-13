@@ -34,6 +34,15 @@ export const ENGINE_CONFIG: EngineConfig = {
 };
 
 /**
+ * E-Mode categories as the Neverland app names them, keyed by the label stored on-chain.
+ * Unknown labels are shown as stored.
+ */
+export const EMODE_APP_NAMES: Record<string, string> = {
+  "Liquid Staking Tokens": "MON & LST",
+  Stablecoins: "Stables",
+};
+
+/**
  * Risk scoring, aimed at the chance of liquidation or losing access to funds.
  * Low ≤ 1 point, Medium = 2, High ≥ 3.
  *

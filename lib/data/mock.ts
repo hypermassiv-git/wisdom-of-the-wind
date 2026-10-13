@@ -58,7 +58,7 @@ export function mockSnapshot(now = new Date()): MarketSnapshot {
         name: "main pool",
         kind: "main",
         eModes: [
-          { id: 1, label: "MON-correlated", ltv: 0.9, liquidationThreshold: 0.93 },
+          { id: 1, label: "Liquid Staking Tokens", ltv: 0.9, liquidationThreshold: 0.93 },
           { id: 2, label: "Stablecoins", ltv: 0.93, liquidationThreshold: 0.95 },
         ],
         reserves: [

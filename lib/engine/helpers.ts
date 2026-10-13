@@ -1,7 +1,7 @@
 import { getAsset } from "@/config/assets";
 import type { EngineConfig } from "@/config/engine";
 import type { MarketSnapshot } from "@/lib/data/types";
-import { borrowFraction, carrySizes, effectiveLimits, positionEarnings, safetyScore } from "./math";
+import { borrowFraction, borrowLimits, carrySizes, effectiveLimits, positionEarnings, safetyScore } from "./math";
 import type { Candidate, Leg, MarketReserve } from "./types";
 
 export interface GenContext {
@@ -83,6 +83,7 @@ export function buildCarry(
       makeLeg("lend", lend, borrowed, y),
     ],
     safetyScore: safetyScore(deposited, limits.liquidationThreshold, borrowed),
+    borrowLimits: borrowLimits(collateral.market, collateral.reserve, debt.reserve),
     vars: {
       deposit: collateral.reserve.symbol,
       borrow: debt.reserve.symbol,
