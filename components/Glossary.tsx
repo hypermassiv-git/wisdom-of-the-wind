@@ -17,7 +17,7 @@ const GROUPS: { title: string; terms: [string, string][] }[] = [
   {
     title: "Keeping a loan safe",
     terms: [
-      ["Borrow limit (LTV)", "The most you can borrow, as a share of your deposit. Strategies here use half."],
+      ["Borrow limit (LTV)", "The most you can borrow, as a share of your deposit. Strategies here stay well under it."],
       ["E-Mode", "A Neverland setting that raises the limit for coins that move together, like shMON and MON."],
       ["Health Factor", "How covered your loan is. Above 1 is safe; higher is safer."],
       ["Liquidation", "Below 1, part of your deposit is sold to repay the loan, plus a penalty."],

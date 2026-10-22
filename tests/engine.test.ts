@@ -97,8 +97,15 @@ describe("runEngine on mock data", () => {
     expect(loop.risk).toBe("Low");
   });
 
-  it("keeps a conservative safety score", () => {
-    for (const s of all) expect(s.safetyScore).toBeGreaterThan(1.5);
+  it("keeps every loan at or above its target Health Factor", () => {
+    const { sameFamily, crossFamily } = ENGINE_CONFIG.targetHealthFactor;
+    for (const s of all) {
+      const deposit = s.legs.find((l) => l.role === "deposit")!;
+      const borrow = s.legs.find((l) => l.role === "borrow");
+      if (!borrow) continue;
+      const same = getAsset(deposit.symbol)?.family === getAsset(borrow.symbol)?.family;
+      expect(s.safetyScore).toBeGreaterThanOrEqual((same ? sameFamily : crossFamily) - 1e-9);
+    }
   });
 
   it("fills every template placeholder with live values", () => {

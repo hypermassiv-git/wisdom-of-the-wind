@@ -23,9 +23,10 @@ const leg = (l: Partial<Leg> & Pick<Leg, "role" | "amountUsd">): Leg => ({
 });
 
 describe("sizing", () => {
-  it("borrows the configured share of max LTV", () => {
-    expect(borrowFraction(0.8, 0.5)).toBeCloseTo(0.4);
-    expect(borrowFraction(0, 0.5)).toBe(0);
+  it("borrows down to the target Health Factor, never past the borrow limit", () => {
+    expect(borrowFraction({ ltv: 0.85, liquidationThreshold: 0.88 }, 2)).toBeCloseTo(0.44);
+    expect(borrowFraction({ ltv: 0.6, liquidationThreshold: 0.95 }, 1.3)).toBeCloseTo(0.6);
+    expect(borrowFraction({ ltv: 0, liquidationThreshold: 0 }, 1.3)).toBe(0);
   });
 
   it("sums the loop as a geometric series", () => {
