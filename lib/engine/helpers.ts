@@ -22,6 +22,12 @@ export function family(symbol: string) {
   return getAsset(symbol)?.family;
 }
 
+/** Health Factor to size a loan to: tighter when deposit and loan move together in price. */
+export function targetHealthFactor(collateral: string, debt: string, config: EngineConfig): number {
+  const { sameFamily, crossFamily } = config.targetHealthFactor;
+  return family(collateral) === family(debt) ? sameFamily : crossFamily;
+}
+
 export function isBorrowable(mr: MarketReserve, config: EngineConfig): boolean {
   const asset = getAsset(mr.reserve.symbol);
   return (
@@ -71,7 +77,7 @@ export function buildCarry(
   if (collateral.market.id !== debt.market.id) return null;
   if (lend.market.id === debt.market.id && lend.reserve.symbol === debt.reserve.symbol) return null;
   const limits = effectiveLimits(collateral.market, collateral.reserve, debt.reserve);
-  const b = borrowFraction(limits.ltv, ctx.config.leverageFraction);
+  const b = borrowFraction(limits, targetHealthFactor(collateral.reserve.symbol, debt.reserve.symbol, ctx.config));
   if (b <= 0) return null;
   const { deposited, borrowed } = carrySizes(ctx.config.principalUsd, b);
   const y = ctx.snapshot.builtInYields;
@@ -83,7 +89,7 @@ export function buildCarry(
       makeLeg("lend", lend, borrowed, y),
     ],
     safetyScore: safetyScore(deposited, limits.liquidationThreshold, borrowed),
-    borrowLimits: borrowLimits(collateral.market, collateral.reserve, debt.reserve),
+    borrowLimits: borrowLimits(collateral.market, collateral.reserve, debt.reserve, b),
     vars: {
       deposit: collateral.reserve.symbol,
       borrow: debt.reserve.symbol,

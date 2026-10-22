@@ -1,6 +1,7 @@
 /**
  * Stablecoin carry: deposit a stablecoin, borrow another stablecoin that is cheap,
- * and lend a different stablecoin that pays more. One result per place you lend.
+ * and lend a different stablecoin that pays more. One result per deposit and place you lend
+ * (the cheapest loan wins).
  */
 import { getAsset } from "@/config/assets";
 import {
@@ -28,7 +29,10 @@ export function stableCarries(ctx: GenContext): Candidate[] {
         // Depositing more of your own deposit asset in the same pool isn't a separate strategy.
         if (lend.market.id === collateral.market.id && lend.reserve.symbol === collateral.reserve.symbol) continue;
         const c = buildCarry("stableCarry", collateral, debt, lend, ctx);
-        if (c) found.push({ key: `${lend.reserve.symbol}@${lend.market.id}`, candidate: c });
+        if (c) found.push({
+            key: `${collateral.reserve.symbol}@${collateral.market.id}>${lend.reserve.symbol}@${lend.market.id}`,
+            candidate: c,
+          });
       }
     }
   }

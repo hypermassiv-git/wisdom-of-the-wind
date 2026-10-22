@@ -36,6 +36,8 @@ export interface BorrowLimits {
   ltv: number;
   /** Loan share at which part of the deposit gets sold (Health Factor 1). */
   liquidationThreshold: number;
+  /** Share of the deposit this plan borrows (each round, for loops). */
+  borrowShare: number;
   /** The deposit's own LTV and liquidation threshold, outside E-Mode. */
   normalLtv: number;
   normalLiquidationThreshold: number;

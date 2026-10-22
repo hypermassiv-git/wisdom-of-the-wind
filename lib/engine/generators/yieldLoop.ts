@@ -3,7 +3,15 @@
  * version, convert it back and redeposit. Repeated until the target borrow share is reached.
  */
 import { getAsset } from "@/config/assets";
-import { bestPerGroup, type GenContext, isBorrowable, isCollateral, makeLeg, maturityOf } from "../helpers";
+import {
+  bestPerGroup,
+  type GenContext,
+  isBorrowable,
+  isCollateral,
+  makeLeg,
+  maturityOf,
+  targetHealthFactor,
+} from "../helpers";
 import { borrowFraction, borrowLimits, effectiveLimits, loopSizes, safetyScore } from "../math";
 import type { Candidate } from "../types";
 
@@ -18,7 +26,7 @@ export function yieldLoops(ctx: GenContext): Candidate[] {
       if (!isBorrowable({ market, reserve: plain }, ctx.config)) continue;
 
       const limits = effectiveLimits(market, reserve, plain);
-      const b = borrowFraction(limits.ltv, ctx.config.leverageFraction);
+      const b = borrowFraction(limits, targetHealthFactor(reserve.symbol, plain.symbol, ctx.config));
       if (b <= 0) continue;
       const { supplied, borrowed } = loopSizes(ctx.config.principalUsd, b);
       const y = ctx.snapshot.builtInYields;
@@ -30,7 +38,7 @@ export function yieldLoops(ctx: GenContext): Candidate[] {
           makeLeg("borrow", { market, reserve: plain }, borrowed, y),
         ],
         safetyScore: safetyScore(supplied, limits.liquidationThreshold, borrowed),
-        borrowLimits: borrowLimits(market, reserve, plain),
+        borrowLimits: borrowLimits(market, reserve, plain, b),
         vars: {
           deposit: reserve.symbol,
           borrow: plain.symbol,

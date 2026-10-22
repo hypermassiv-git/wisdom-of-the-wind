@@ -91,7 +91,7 @@ function limitSentence(s: Strategy, deposit: Leg, collateralUsd: number): string
   const d = displayName(deposit.symbol);
   return `In the ${deposit.marketName} you can borrow up to ${percent(l.ltv)} of your ${d}'s value (its borrow limit, or LTV), which would be ${usd(
     collateralUsd * l.ltv,
-  )}. This plan borrows half of that, ${percent(l.ltv * ENGINE_CONFIG.leverageFraction)} of your deposit, to leave a safety buffer.`;
+  )}. This plan borrows ${percent(l.borrowShare)} of your deposit, leaving a safe cushion before liquidation.`;
 }
 
 /** What the Health Factor should read once the loan is taken, and when to act. */

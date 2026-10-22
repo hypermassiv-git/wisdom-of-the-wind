@@ -146,11 +146,11 @@ export function StrategyFinder() {
   const loading = state.status === "loading";
 
   // Re-run the engine in the browser for the chosen amount (same rates, scaled dollars),
-  // then sort and filter.
+  // then sort and filter. No cap here, so picking a token sees all of its strategies.
   const { strategies: all, tooBig } = useMemo(
     () =>
       data
-        ? runEngineDetailed(data.snapshot, { ...ENGINE_CONFIG, principalUsd: amount, maxResults: 50 })
+        ? runEngineDetailed(data.snapshot, { ...ENGINE_CONFIG, principalUsd: amount, maxResults: Infinity })
         : { strategies: [], tooBig: 0 },
     [data, amount],
   );

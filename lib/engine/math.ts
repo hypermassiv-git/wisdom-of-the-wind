@@ -24,16 +24,19 @@ export function effectiveLimits(market: Market, collateral: Reserve, debt: Reser
  * The limits a loan is sized from, for the walkthrough text: the borrow limit that applies, the
  * collateral's normal limit, and the efficiency-mode category the user must turn on to get it.
  */
-export function borrowLimits(market: Market, collateral: Reserve, debt: Reserve): BorrowLimits {
+export function borrowLimits(market: Market, collateral: Reserve, debt: Reserve, borrowShare: number): BorrowLimits {
   const limits = effectiveLimits(market, collateral, debt);
   const label = limits.ltv > collateral.ltv ? market.eModes.find((m) => m.id === collateral.eModeId)?.label : undefined;
   const eMode = label && (EMODE_APP_NAMES[label] ?? label);
-  return { ...limits, normalLtv: collateral.ltv, normalLiquidationThreshold: collateral.liquidationThreshold, ...(eMode ? { eMode } : {}) };
+  return { ...limits, borrowShare, normalLtv: collateral.ltv, normalLiquidationThreshold: collateral.liquidationThreshold, ...(eMode ? { eMode } : {}) };
 }
 
-/** Share of the deposit that gets borrowed: max LTV scaled down to be conservative. */
-export function borrowFraction(ltv: number, leverageFraction: number): number {
-  return Math.max(0, Math.min(ltv * leverageFraction, 0.95));
+/**
+ * Share of the deposit that gets borrowed: enough to bring the Health Factor (liquidation
+ * threshold ÷ borrowed share) down to the target, never past the borrow limit.
+ */
+export function borrowFraction(limits: Limits, targetHealthFactor: number): number {
+  return Math.max(0, Math.min(limits.liquidationThreshold / targetHealthFactor, limits.ltv, 0.95));
 }
 
 /**

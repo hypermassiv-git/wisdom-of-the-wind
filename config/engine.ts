@@ -3,8 +3,12 @@
 export interface EngineConfig {
   /** Only show strategies whose net yearly rate beats this (0.01 = 1%). */
   minNetApr: number;
-  /** Borrow this share of the maximum allowed (0.5 = half of max). */
-  leverageFraction: number;
+  /**
+   * Health Factor each loan is sized to right after borrowing (liquidation is at 1). Deposit and
+   * loan in the same price family (dollars against dollars, shMON against MON) move together, so
+   * they can borrow more; different families (MON against dollars) keep a wider cushion.
+   */
+  targetHealthFactor: { sameFamily: number; crossFamily: number };
   /** Amount the card numbers are quoted for, in USD. */
   principalUsd: number;
   /**
@@ -25,7 +29,8 @@ export interface EngineConfig {
 
 export const ENGINE_CONFIG: EngineConfig = {
   minNetApr: 0.01,
-  leverageFraction: 0.5,
+  // 1.3 sits above the 1.2 "repay some" warning in the walkthrough; 2.0 is a 50% price drop away.
+  targetHealthFactor: { sameFamily: 1.3, crossFamily: 2.0 },
   principalUsd: 10_000,
   rewardValuation: { MON: 1.0 },
   heldRewards: ["DUST"],

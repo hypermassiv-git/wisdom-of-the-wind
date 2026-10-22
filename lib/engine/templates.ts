@@ -4,7 +4,7 @@
  */
 import { displayName, getAsset } from "@/config/assets";
 import type { EngineConfig } from "@/config/engine";
-import { formatDate, listJoin, pct, usd } from "@/lib/format";
+import { formatDate, listJoin, usd } from "@/lib/format";
 import { mainRiskText } from "./risks";
 import type { Candidate, Earnings, StrategyText, StrategyType } from "./types";
 
@@ -55,7 +55,7 @@ export const TEMPLATES: Record<StrategyType, Templates> = {
   collateralCarry: {
     name: "Earn on your {deposit} without selling it",
     action:
-      "Deposit {deposit}, borrow {borrow} against it (only {borrowShare} of the maximum), and {lendAction}.",
+      "Deposit {deposit}, borrow {borrow} against it (well under the limit), and {lendAction}.",
     whyNow:
       "Your {deposit} keeps earning while you borrow {borrowAmount} of {borrow} against it, which costs about {borrowCost} a year. {lendIt} earns about {lendEarn} a year, so you keep the difference: about {spreadInterest} a year on top of what your {principal} earns by itself{plusDust}.",
     whyNowRewardDriven:
@@ -143,7 +143,6 @@ export function templateVars(
         ? `stake it with ${depositAsset.stakeWith} (or swap it on a DEX) to get`
         : (CONVERT[depositAsset?.conversion ?? ""] ?? "convert it into"),
     lendAction: lend && borrow ? lendAction(borrow.symbol, lend.symbol, lend.marketName) : "",
-    borrowShare: config.leverageFraction === 0.5 ? "half" : pct(config.leverageFraction, 0),
     maturity,
     rewardName,
     plusDust: spread.rewards >= 0.5 ? `, plus about ${usd(spread.rewards)} more in ${rewardName} rewards` : "",
